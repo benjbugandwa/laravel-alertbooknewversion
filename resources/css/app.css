@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+[x-cloak] { display: none !important; }
+
+:root{
+  --onu: #0B4F8A;        /* Bleu ONU */
+  --onu-dark: #083b67;
+  --onu-soft: #E6F0FA;
+}
