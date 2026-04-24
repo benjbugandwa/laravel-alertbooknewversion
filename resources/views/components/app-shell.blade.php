@@ -63,16 +63,16 @@
 
                     <x-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')"
                         icon="layout-dashboard">Dashboard</x-nav-link>
-                    <x-nav-link href="{{ route('survivants.index') }}" :active="request()->routeIs('survivants.*')" icon="users">
-                        Survivants
-                    </x-nav-link>
+
+                    <x-nav-link href="{{ route('documents.index') }}" :active="request()->routeIs('documents.*')"
+                        icon="folder">Documents</x-nav-link>
 
                     <x-nav-link href="{{ route('incidents.index') }}" :active="request()->routeIs('incidents.*')"
-                        icon="alert-triangle">Incidents</x-nav-link>
+                        icon="alert-triangle">Alertes</x-nav-link>
 
 
                     <x-nav-link href="{{ route('service-providers.index') }}" :active="request()->routeIs('providers.*')" icon="building-2">
-                        Structures
+                        Structures de prise en charge
                     </x-nav-link>
 
 
@@ -93,9 +93,7 @@
                         Mon profil
                     </x-nav-link>
 
-                    <x-nav-link href="{{ route('about_us') }}" :active="request()->routeIs('about_us')" icon="user-pen">
-                        A propos de AlertBook
-                    </x-nav-link>
+                   
                 </nav>
             </div>
         </aside>
@@ -127,8 +125,10 @@
                     <nav class="space-y-1">
                         <x-nav-link href="{{ route('dashboard') }}" :active="request()->is('/')"
                             @click="close()">Dashboard</x-nav-link>
+                        <x-nav-link href="{{ route('documents.index') }}" :active="false"
+                            @click="close()">Documents</x-nav-link>
                         <x-nav-link href="{{ route('incidents.index') }}" :active="false"
-                            @click="close()">Incidents</x-nav-link>
+                            @click="close()">Alertes</x-nav-link>
                         <x-nav-link href="{{ route('service-providers.index') }}" :active="false"
                             @click="close()">Structures</x-nav-link>
                         <x-nav-link href="{{ route('organisations.index') }}" :active="false"
@@ -139,9 +139,6 @@
                             @click="close()">Performance superviseurs</x-nav-link>
                         <x-nav-link href="{{ route('profile') }}" :active="false" @click="close()">Mon
                             profil</x-nav-link>
-
-                        <x-nav-link href="{{ route('about_us') }}" :active="false" @click="close()">A propos de
-                            AlertBook</x-nav-link>
 
 
                     </nav>

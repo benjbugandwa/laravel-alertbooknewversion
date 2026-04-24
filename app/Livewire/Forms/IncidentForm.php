@@ -46,6 +46,18 @@ class IncidentForm extends Form
     #[Validate('required|in:Standard,Protegé,Confidentielle')]
     public string $confidentiality_level = 'Standard';
 
+    #[Validate('nullable|string|exists:chefferies,code_chefferie')]
+    public ?string $code_chefferie = null;
+
+    #[Validate('nullable|string|exists:groupements,code_groupement')]
+    public ?string $code_groupement = null;
+
+    #[Validate('nullable|string|exists:airesantes,code_airesante')]
+    public ?string $code_airesante = null;
+
+    #[Validate('nullable|string|exists:evenements,code_evenement')]
+    public ?string $code_evenement = null;
+
     public function setIncident(?Incident $incident): void
     {
         if ($incident) {
@@ -61,6 +73,10 @@ class IncidentForm extends Form
             $this->source_info = $incident->source_info ?? '';
             $this->description_faits = $incident->description_faits ?? '';
             $this->confidentiality_level = $incident->confidentiality_level ?? 'Standard';
+            $this->code_chefferie = $incident->code_chefferie;
+            $this->code_groupement = $incident->code_groupement;
+            $this->code_airesante = $incident->code_airesante;
+            $this->code_evenement = $incident->code_evenement;
         } else {
             $this->reset();
         }

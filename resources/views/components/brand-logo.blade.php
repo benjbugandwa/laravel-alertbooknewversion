@@ -20,6 +20,6 @@
 
     <div class="leading-tight">
         <div class="font-bold tracking-tight {{ $text }}">AlertBook</div>
-        <div class="text-xs {{ $muted }}">Développé par RFD</div>
+        <div class="text-xs {{ $muted }}">Développé par UNHCR pour le cluster protection</div>
     </div>
 </div>

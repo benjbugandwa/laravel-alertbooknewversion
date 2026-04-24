@@ -21,7 +21,11 @@ class IncidentPrintController extends Controller
         $incident->load([
             'province',      // relation Province (code_province)
             'territoire',    // relation Territoire (code_territoire)
+            'chefferie',     // relation Chefferie (code_chefferie)
+            'groupement',    // relation Groupement (code_groupement)
             'zoneSante',     // relation ZoneSante (code_zonesante)
+            'aireSante',     // relation AireSante (code_airesante)
+            'evenement',     // relation Evenement (code_evenement)
             'assignedTo',    // relation user superviseur assigné (si tu as assigned_to)
             'violences',     // pivot violence_incidents
             'referencements.provider', // provider pour focal point

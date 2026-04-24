@@ -1,23 +1,28 @@
 <div class="space-y-6 relative" x-data x-on:open-url.window="window.open($event.detail.url, '_blank')">
-    <div wire:loading class="absolute inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-2xl">
+    <div wire:loading
+        class="absolute inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-2xl">
         <div class="flex flex-col items-center gap-2">
-            <svg class="animate-spin h-8 w-8 text-onu" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            <svg class="animate-spin h-8 w-8 text-onu" xmlns="http://www.w3.org/2000/svg" fill="none"
+                viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                </circle>
+                <path class="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                </path>
             </svg>
             <span class="text-sm font-medium text-gray-700">Chargement...</span>
         </div>
     </div>
     <div class="flex items-start justify-between gap-4">
         <div>
-            <div class="text-2xl font-bold">Incidents</div>
+            <div class="text-2xl font-bold">Alertes</div>
             <div class="text-sm text-gray-600">
-                Les incidents archivés ne sont pas visibles. Validation par superviseur.
+                Les alertes archiveés ne sont pas visibles. Validation par superviseur.
             </div>
         </div>
 
         <x-ui-button wire:click="openCreate">
-            + Nouvel incident
+            + Nouvelle alerte
         </x-ui-button>
         <x-ui-button variant="secondary" x-on:click="$dispatch('openIncidentsExport')">
             Exporter
@@ -26,7 +31,7 @@
 
     <x-ui-card>
         <div class="grid grid-cols-1 lg:grid-cols-6 gap-4">
-            <x-ui-input label="Recherche" placeholder="INC-000001…" wire:model.live="q" />
+            <x-ui-input label="Recherche" placeholder="ALT-000001…" wire:model.live="q" />
 
             <div class="space-y-1">
                 <label class="text-sm font-medium text-gray-700">Statut</label>
@@ -46,10 +51,9 @@
                 <select wire:model.live="f_severite"
                     class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
                     <option value="">Toutes</option>
-                    <option value="Faible">Faible</option>
-                    <option value="Moyenne">Moyenne</option>
-                    <option value="Élevée">Élevée</option>
-                    <option value="Critique">Critique</option>
+                    @foreach ($this->severityOptions as $sev)
+                        <option value="{{ $sev }}">{{ $sev }}</option>
+                    @endforeach
                 </select>
             </div>
 
@@ -90,6 +94,17 @@
             </div>
 
             <div class="space-y-1">
+                <label class="text-sm font-medium text-gray-700">Type d'événement</label>
+                <select wire:model.live="f_evenement"
+                    class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
+                    <option value="">Tous</option>
+                    @foreach ($this->evenements as $e)
+                        <option value="{{ $e['code'] }}">{{ $e['name'] }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="space-y-1">
                 <label class="text-sm font-medium text-gray-700">Du</label>
                 <input type="date" wire:model.live="date_from"
                     class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white" />
@@ -113,24 +128,13 @@
         </div>
     </x-ui-card>
 
-    <x-ui-table :headers="['Code', 'Date', 'Violences', 'Sévérité', 'Statut', 'Localisation', 'Actions']">
+    <x-ui-table :headers="['Code', 'Date', 'Type d\'événement', 'Sévérité', 'Statut', 'Localisation', 'Actions']">
         @forelse($incidents as $inc)
             <tr>
                 <td class="px-4 py-3 font-medium">{{ $inc->code_incident }}</td>
                 <td class="px-4 py-3">{{ optional($inc->date_incident)->format('Y-m-d') }}</td>
                 <td class="px-4 py-3 text-sm text-gray-700">
-                    @php
-                        $names = $inc->violences?->pluck('violence_name')->take(2) ?? collect();
-                        $more = max(0, ($inc->violences?->count() ?? 0) - 2);
-                    @endphp
-
-                    @if ($names->isEmpty())
-                        <span class="text-gray-400">—</span>
-                    @else
-                        {{ $names->join(', ') }} @if ($more > 0)
-                            <span class="text-gray-500">(+{{ $more }})</span>
-                        @endif
-                    @endif
+                    {{ $inc->evenement_name ?? '—' }}
                 </td>
                 <td class="px-4 py-3">{{ $inc->severite ?? '-' }}</td>
                 <td class="px-4 py-3">
@@ -170,10 +174,17 @@
                         </button>
 
                         {{-- Dropdown actions --}}
-                        <div x-data="{ open: false }" class="relative">
-                            <button type="button"
-                                class="bg-onu text-white hover:bg-onu-dark rounded-lg px-3 py-1.5 text-sm transition"
-                                @click="open=!open">
+                        <div x-data="{ open: false, top: 0, left: 0 }" class="relative" @scroll.window="open = false">
+                            <button type="button" x-ref="btn"
+                                class="bg-onu text-white hover:bg-onu-dark rounded-lg px-3 py-1.5 text-sm transition inline-flex items-center gap-1"
+                                @click="
+                                    open = !open;
+                                    if(open) {
+                                        let rect = $refs.btn.getBoundingClientRect();
+                                        top = rect.bottom;
+                                        left = rect.right - 192;
+                                    }
+                                ">
                                 Actions
                                 <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd"
@@ -182,53 +193,62 @@
                                 </svg>
                             </button>
 
-                            <div x-cloak x-show="open" @click.outside="open=false"
-                                class="absolute right-0 mt-2 w-48 rounded-xl border bg-white shadow-lg overflow-hidden z-50">
+                            <template x-teleport="body">
+                                <div x-cloak x-show="open" @click.outside="open=false"
+                                    :style="`top: ${top}px; left: ${left}px; position: fixed; margin-top: 0.5rem;`"
+                                    class="w-48 rounded-xl border bg-white shadow-lg overflow-hidden z-[100]">
 
-                                {{-- Show Details Incidents --}}
-                                <a href="{{ route('incidents.show', $inc->id) }}"
-                                    class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50">
-                                    Détails
-                                </a>
+                                    {{-- Show Details Incidents --}}
+                                    <a href="{{ route('incidents.show', $inc->id) }}"
+                                        class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50">
+                                        Détails
+                                    </a>
 
 
-                                {{-- Éditer --}}
-                                <button class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-50"
-                                    wire:click="openEdit('{{ $inc->id }}')" @disabled(auth()->user()->user_role === 'moniteur' || in_array($inc->statut_incident, ['Cloturée', 'Archivé']))>
-                                    Éditer
-                                </button>
+                                    {{-- Éditer --}}
+                                    <button class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-50"
+                                        wire:click="openEdit('{{ $inc->id }}')" @disabled(auth()->user()->user_role === 'moniteur' || in_array($inc->statut_incident, ['Cloturée', 'Archivé']))>
+                                        Éditer
+                                    </button>
 
-                                {{-- Violation lies à l'incident --}}
-                                <button class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
-                                    wire:click="$dispatch('openIncidentViolences', '{{ $inc->id }}')">
-                                    Types de violences
-                                </button>
+                                    {{-- Violation lies à l'incident --}}
+                                    <button class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
+                                        wire:click="$dispatch('openIncidentViolences', '{{ $inc->id }}')">
+                                        Types de violations
+                                    </button>
 
-                                {{-- Assigner --}}
-                                <button class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-50"
-                                    wire:click="openAssign('{{ $inc->id }}')" @disabled(auth()->user()->user_role === 'moniteur' || in_array($inc->statut_incident, ['Cloturée', 'Archivé']))>
-                                    Assigner
-                                </button>
+                                    {{-- Mouvements de population --}}
+                                    <a href="{{ route('incidents.mouvements', $inc->id) }}"
+                                        class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50">
+                                        Mouvements de population
+                                    </a>
 
-                                {{-- Valider --}}
-                                <button class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-50"
-                                    wire:click="askConfirmValidate('{{ $inc->id }}')"
-                                    @disabled(auth()->user()->user_role === 'moniteur' ||
-                                            in_array($inc->statut_incident, ['Cloturée', 'Archivé']) ||
-                                            $inc->statut_incident === 'Validé')>
-                                    Valider
-                                </button>
+                                    {{-- Assigner --}}
+                                    <button class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-50"
+                                        wire:click="openAssign('{{ $inc->id }}')" @disabled(auth()->user()->user_role === 'moniteur' || in_array($inc->statut_incident, ['Cloturée', 'Archivé']))>
+                                        Assigner
+                                    </button>
 
-                                <div class="h-px bg-gray-100"></div>
+                                    {{-- Valider --}}
+                                    <button class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-50"
+                                        wire:click="askConfirmValidate('{{ $inc->id }}')"
+                                        @disabled(auth()->user()->user_role === 'moniteur' ||
+                                                in_array($inc->statut_incident, ['Cloturée', 'Archivé']) ||
+                                                $inc->statut_incident === 'Validé')>
+                                        Valider
+                                    </button>
 
-                                {{-- Archiver --}}
-                                <button
-                                    class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-red-600 disabled:opacity-50"
-                                    wire:click="askConfirmArchive('{{ $inc->id }}')"
-                                    @disabled(auth()->user()->user_role === 'moniteur' || in_array($inc->statut_incident, ['Cloturée', 'Archivé']))>
-                                    Archiver
-                                </button>
-                            </div>
+                                    <div class="h-px bg-gray-100"></div>
+
+                                    {{-- Archiver --}}
+                                    <button
+                                        class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-red-600 disabled:opacity-50"
+                                        wire:click="askConfirmArchive('{{ $inc->id }}')"
+                                        @disabled(auth()->user()->user_role === 'moniteur' || in_array($inc->statut_incident, ['Cloturée', 'Archivé']))>
+                                        Archiver
+                                    </button>
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </td>
@@ -254,15 +274,30 @@
 
             <div class="relative w-full max-w-3xl bg-white rounded-2xl shadow-xl border max-h-[85vh] flex flex-col">
                 <div class="px-5 py-4 border-b flex items-center justify-between shrink-0">
-                    <div class="font-semibold">{{ $editing ? 'Éditer incident' : 'Nouveau incident' }}</div>
+                    <div class="font-semibold">{{ $editing ? 'Éditer alerte' : 'Nouvelle alerte' }}</div>
                     <button type="button" class="opacity-60 hover:opacity-100"
                         wire:click="$set('showModal', false)">✕</button>
                 </div>
 
-                <div class="p-5 space-y-4 overflow-y-auto">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="p-5 space-y-6 overflow-y-auto">
+                    {{-- 1. Événement et Date Alerte --}}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="space-y-1">
-                            <label class="text-sm font-medium text-gray-700">Date incident *</label>
+                            <label class="text-sm font-medium text-gray-700">Événement *</label>
+                            <select wire:model.defer="form.code_evenement"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
+                                <option value="">-- Sélectionner --</option>
+                                @foreach ($this->evenements as $e)
+                                    <option value="{{ $e['code'] }}">{{ $e['name'] }}</option>
+                                @endforeach
+                            </select>
+                            @error('form.code_evenement')
+                                <div class="text-sm text-red-600">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-sm font-medium text-gray-700">Date Alerte *</label>
                             <input type="date" wire:model.defer="form.date_incident"
                                 max="{{ now()->toDateString() }}"
                                 class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
@@ -270,9 +305,10 @@
                                 <div class="text-sm text-red-600">{{ $message }}</div>
                             @enderror
                         </div>
+                    </div>
 
-
-
+                    {{-- 2. Sévérité, Statut, Confidentialité --}}
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="space-y-1">
                             <label class="text-sm font-medium text-gray-700">Sévérité *</label>
                             <select wire:model.defer="form.severite"
@@ -285,8 +321,6 @@
                                 <div class="text-sm text-red-600">{{ $message }}</div>
                             @enderror
                         </div>
-
-
 
                         <div class="space-y-1">
                             <label class="text-sm font-medium text-gray-700">Statut *</label>
@@ -301,80 +335,6 @@
                                 <div class="text-sm text-red-600">{{ $message }}</div>
                             @enderror
                         </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {{-- Province rattachée automatiquement pour non-superadmin --}}
-                        <div class="space-y-1">
-                            <label class="text-sm font-medium text-gray-700">Province *</label>
-                            <select wire:model.live="form.code_province"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white"
-                                @disabled(auth()->user()->user_role !== 'superadmin')>
-                                @if (auth()->user()->user_role !== 'superadmin')
-                                    <option value="{{ auth()->user()->code_province }}">
-                                        {{ auth()->user()->code_province }}</option>
-                                @else
-                                    <option value="">-- Sélectionner --</option>
-                                    @foreach ($this->provinces as $p)
-                                        <option value="{{ $p['code'] }}">{{ $p['name'] }}</option>
-                                    @endforeach
-                                @endif
-                            </select>
-                            @error('form.code_province')
-                                <div class="text-sm text-red-600">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="space-y-1">
-                            <label class="text-sm font-medium text-gray-700">Territoire</label>
-                            <select wire:model.live="form.code_territoire"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
-                                <option value="">-- Sélectionner --</option>
-                                @foreach ($this->territoires as $t)
-                                    <option value="{{ $t['code'] }}">{{ $t['name'] }}</option>
-                                @endforeach
-                            </select>
-                            @error('form.code_territoire')
-                                <div class="text-sm text-red-600">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="space-y-1">
-                            <label class="text-sm font-medium text-gray-700">Zone de santé</label>
-                            <select wire:model.defer="form.code_zonesante"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
-                                <option value="">-- Sélectionner --</option>
-                                @foreach ($this->zones as $z)
-                                    <option value="{{ $z['code'] }}">{{ $z['name'] }}</option>
-                                @endforeach
-                            </select>
-                            @error('form.code_zonesante')
-                                <div class="text-sm text-red-600">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="space-y-1">
-                            <label class="text-sm font-medium text-gray-700">Survivant (optionnel)</label>
-                            <select wire:model.defer="form.survivant_id"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
-                                <option value="">-- Aucun --</option>
-                                @foreach ($this->survivants as $s)
-                                    <option value="{{ $s->id }}">{{ $s->code_survivant }} —
-                                        {{ $s->full_name }}</option>
-                                @endforeach
-                            </select>
-                            @error('form.survivant_id')
-                                <div class="text-sm text-red-600">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <x-ui-input label="Localité" wire:model.defer="form.localite" name="localite" />
-                        <x-ui-input label="Source d'information" wire:model.defer="form.source_info"
-                            name="source_info" />
-                        <x-ui-input label="Auteur présumé (optionnel)" wire:model.defer="form.auteur_presume"
-                            name="auteur_presume" />
 
                         <div class="space-y-1">
                             <label class="text-sm font-medium text-gray-700">Confidentialité *</label>
@@ -388,6 +348,115 @@
                                 <div class="text-sm text-red-600">{{ $message }}</div>
                             @enderror
                         </div>
+                    </div>
+
+                    {{-- 3. Bloc Localisation --}}
+                    <div class="bg-gray-50 border border-gray-200 p-4 rounded-xl space-y-4">
+                        <h3 class="text-sm font-bold text-gray-800 border-b pb-2 uppercase tracking-wide">Localisation</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {{-- Province rattachée automatiquement pour non-superadmin --}}
+                            <div class="space-y-1">
+                                <label class="text-sm font-medium text-gray-700">Province *</label>
+                                <select wire:model.live="form.code_province"
+                                    class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white"
+                                    @disabled(auth()->user()->user_role !== 'superadmin')>
+                                    @if (auth()->user()->user_role !== 'superadmin')
+                                        <option value="{{ auth()->user()->code_province }}">
+                                            {{ auth()->user()->code_province }}</option>
+                                    @else
+                                        <option value="">-- Sélectionner --</option>
+                                        @foreach ($this->provinces as $p)
+                                            <option value="{{ $p['code'] }}">{{ $p['name'] }}</option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                                @error('form.code_province')
+                                    <div class="text-sm text-red-600">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-sm font-medium text-gray-700">Territoire</label>
+                                <select wire:model.live="form.code_territoire"
+                                    class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
+                                    <option value="">-- Sélectionner --</option>
+                                    @foreach ($this->territoires as $t)
+                                        <option value="{{ $t['code'] }}">{{ $t['name'] }}</option>
+                                    @endforeach
+                                </select>
+                                @error('form.code_territoire')
+                                    <div class="text-sm text-red-600">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-sm font-medium text-gray-700">Chefferie</label>
+                                <select wire:model.live="form.code_chefferie"
+                                    class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
+                                    <option value="">-- Sélectionner --</option>
+                                    @foreach ($this->chefferies as $c)
+                                        <option value="{{ $c['code'] }}">{{ $c['name'] }}</option>
+                                    @endforeach
+                                </select>
+                                @error('form.code_chefferie')
+                                    <div class="text-sm text-red-600">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-sm font-medium text-gray-700">Groupement</label>
+                                <select wire:model.defer="form.code_groupement"
+                                    class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
+                                    <option value="">-- Sélectionner --</option>
+                                    @foreach ($this->groupements as $g)
+                                        <option value="{{ $g['code'] }}">{{ $g['name'] }}</option>
+                                    @endforeach
+                                </select>
+                                @error('form.code_groupement')
+                                    <div class="text-sm text-red-600">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-sm font-medium text-gray-700">Zone de santé</label>
+                                <select wire:model.live="form.code_zonesante"
+                                    class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
+                                    <option value="">-- Sélectionner --</option>
+                                    @foreach ($this->zones as $z)
+                                        <option value="{{ $z['code'] }}">{{ $z['name'] }}</option>
+                                    @endforeach
+                                </select>
+                                @error('form.code_zonesante')
+                                    <div class="text-sm text-red-600">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-sm font-medium text-gray-700">Aire de santé</label>
+                                <select wire:model.defer="form.code_airesante"
+                                    class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
+                                    <option value="">-- Sélectionner --</option>
+                                    @foreach ($this->airesantes as $a)
+                                        <option value="{{ $a['code'] }}">{{ $a['name'] }}</option>
+                                    @endforeach
+                                </select>
+                                @error('form.code_airesante')
+                                    <div class="text-sm text-red-600">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <x-ui-input label="Localité" wire:model.defer="form.localite" name="localite" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- 4. Auteur présumé et Source d'information --}}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <x-ui-input label="Auteur présumé (optionnel)" wire:model.defer="form.auteur_presume"
+                            name="auteur_presume" />
+                        <x-ui-input label="Source d'information" wire:model.defer="form.source_info"
+                            name="source_info" />
                     </div>
 
                     <div class="space-y-1">

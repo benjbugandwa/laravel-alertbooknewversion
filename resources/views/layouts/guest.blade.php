@@ -5,7 +5,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $title ?? 'AlertBook' }}</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/logo/favicon.ico') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('images/logo/favicons/apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/logo/favicons/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('images/logo/favicons/favicon-16x16.png') }}">
+    <link rel="manifest" href="{{ asset('images/logo/favicons/site.webmanifest') }}">
+    <link rel="shortcut icon" href="{{ asset('images/logo/favicons/favicon.ico') }}">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
@@ -22,16 +26,16 @@
 
             <div class="space-y-3">
                 <div class="text-3xl font-semibold leading-tight">
-                    Gestion sécurisée des données des incidents VBG
+                    Gestion sécurisée des alertes et incident de protections
                 </div>
                 <div class="text-white/80">
                     Application professionnelle pour les organisations humanitaires :
-                    incidents, suivi, référencement, audit.
+                    alertes, incidents, suivi, référencement, audit.
                 </div>
             </div>
 
             <div class="text-white/60 text-sm">
-                © {{ date('Y') }} AlertBook — Développé par Research For Development (RFD)
+                © {{ date('Y') }} AlertBook — Développé par UNHCR pour le cluster protection
             </div>
         </div>
 

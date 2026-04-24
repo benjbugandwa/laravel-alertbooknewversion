@@ -2,35 +2,35 @@
 
 return [
     'app_name' => 'AlertBook',
-    'project' => 'Developed by Research For Development (RFD)',
+    'project' => 'Developed by UNHCR for the Protection Cluster',
 
     'ribbon' => [
-        'platform' => 'Humanitarian platform — GBV incident management',
+        'platform' => 'Humanitarian platform — Alert Management',
         'secure_access' => 'Secure access',
         'switch_to' => 'Français',
     ],
 
     'nav' => [
-        'login' => 'Sign in',
-        'register' => 'Create an account',
+        'login' => 'Login',
+        'register' => 'Register',
         'activation_required' => 'Activation required',
         'dashboard' => 'Dashboard',
     ],
 
     'hero' => [
-        'pill' => 'Institutional case management system',
-        'title' => 'Secure, structured and traceable management of GBV incidents',
-        'subtitle' => 'AlertBook supports humanitarian organizations in incident intake, validation, follow-up and referrals, with strict access control and audit logging.',
+        'pill' => 'Institutional Alert Management System',
+        'title' => 'Secure, harmonized and structured alert management',
+        'subtitle' => 'AlertBook supports humanitarian organizations in recording, validating, tracking, and referring alerts, with strict access control and audit logging.',
         'cta_login' => 'Access the platform',
         'cta_register' => 'Create an account',
         'process_label' => 'Process:',
-        'process_text' => 'Account creation → activation by superadmin → organization, province and role assignment.',
+        'process_text' => 'Account creation → activation by superadmin → assignment of organization, province, and role.',
     ],
 
     'highlights' => [
         'protection_kicker' => 'Protection',
         'protection_title' => 'Confidentiality & roles',
-        'protection_text' => 'Access restricted by role and province, confidentiality levels.',
+        'protection_text' => 'Access restricted by role and province, with multiple confidentiality levels.',
 
         'coord_kicker' => 'Coordination',
         'coord_title' => 'Structured referrals',
@@ -38,20 +38,20 @@ return [
 
         'acc_kicker' => 'Accountability',
         'acc_title' => 'Audit & reporting',
-        'acc_text' => 'Audit logs, exports, A4 PDF sheet.',
+        'acc_text' => 'Audit logs, exports, and A4 PDF report.',
     ],
 
     'panel' => [
-        'kicker' => 'Confidentiality framework',
+        'kicker' => 'Confidentiality Framework',
         'title' => 'Data protection principles',
         'items' => [
             [
                 'title' => 'Data minimization',
-                'desc'  => 'Collection limited to what is required for follow-up.',
+                'desc'  => 'Collection limited to information necessary for follow-up.',
             ],
             [
                 'title' => 'Action traceability',
-                'desc'  => 'Audit log for validation, assignment, archiving, etc.',
+                'desc'  => 'Audit logs for validation, assignment, archiving, etc.',
             ],
             [
                 'title' => 'Access control',
@@ -59,58 +59,58 @@ return [
             ],
         ],
         'note_title' => 'Important note',
-        'note_text'  => 'No sensitive content is publicly displayed on the site.',
+        'note_text'  => 'No sensitive content is publicly displayed on the platform.',
     ],
 
     'features' => [
-        'kicker' => 'Capabilities',
-        'title' => 'Key capabilities',
-        'subtitle' => 'A complete workflow from intake to referral and reporting.',
+        'kicker' => 'Features',
+        'title' => 'Key features',
+        'subtitle' => 'A complete workflow from registration to referral and reporting.',
         'cards' => [
             [
                 'icon' => '📌',
-                'title' => 'Structured intake',
-                'desc' => 'Create incidents with validation workflow, status, severity, photo and location.',
+                'title' => 'Structured registration',
+                'desc' => 'Create alerts with validation, status, severity, photo, and location.',
             ],
             [
                 'icon' => '🧩',
-                'title' => 'Violence types',
-                'desc' => 'Attach multiple violence types per incident with descriptions.',
+                'title' => 'Violation types',
+                'desc' => 'Link multiple violations to a single incident with descriptions.',
             ],
             [
                 'icon' => '📝',
                 'title' => 'Case notes',
-                'desc' => 'Chronological notes with confidentiality and attachments.',
+                'desc' => 'Add chronological notes with confidentiality and attachments.',
             ],
             [
                 'icon' => '🤝',
                 'title' => 'Referrals',
-                'desc' => 'Refer to service providers and track response status.',
+                'desc' => 'Refer cases to service providers and track responses.',
             ],
             [
                 'icon' => '📄',
-                'title' => 'A4 PDF sheet',
-                'desc' => 'Generate a professional A4 incident sheet.',
+                'title' => 'A4 PDF report',
+                'desc' => 'Print a professional incident report in A4 format.',
             ],
             [
                 'icon' => '📊',
                 'title' => 'Exports & dashboards',
-                'desc' => 'Excel/CSV exports and visualizations by province, status, timeframe.',
+                'desc' => 'Excel/CSV exports and visualizations by province, status, and period.',
             ],
         ],
-        'tip' => 'Tip: use exports to produce a coordination-ready follow-up matrix.',
+        'tip' => 'Tip: use exports to produce monitoring matrices aligned with coordination requirements.',
     ],
 
     'cta' => [
         'kicker' => 'Controlled access',
         'title' => 'Create an account and request activation',
-        'text' => 'After registration, a superadmin will activate your account and assign your organization, province and role.',
+        'text' => 'After registration, a superadmin will activate your account and assign your organization, province, and role.',
         'btn_register' => 'Create an account',
-        'btn_login' => 'Sign in',
+        'btn_login' => 'Login',
     ],
 
     'footer' => [
-        'tagline' => 'GBV Incident Management — by Research For Development (RFD)',
+        'tagline' => 'Alert and Incident Management — AlertBook Project',
         'rights' => 'All rights reserved.',
     ],
 ];

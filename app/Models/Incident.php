@@ -46,6 +46,10 @@ class Incident extends Model
         'last_status_changed_at',
         'confidentiality_level',
         'photo_url',
+        'code_chefferie',
+        'code_groupement',
+        'code_airesante',
+        'code_evenement',
     ];
 
     protected $casts = [
@@ -74,6 +78,26 @@ class Incident extends Model
     public function zoneSante(): BelongsTo
     {
         return $this->belongsTo(ZoneSante::class, 'code_zonesante', 'code_zonesante');
+    }
+
+    public function chefferie(): BelongsTo
+    {
+        return $this->belongsTo(Chefferie::class, 'code_chefferie', 'code_chefferie');
+    }
+
+    public function groupement(): BelongsTo
+    {
+        return $this->belongsTo(Groupement::class, 'code_groupement', 'code_groupement');
+    }
+
+    public function aireSante(): BelongsTo
+    {
+        return $this->belongsTo(Airesante::class, 'code_airesante', 'code_airesante');
+    }
+
+    public function evenement(): BelongsTo
+    {
+        return $this->belongsTo(Evenement::class, 'code_evenement', 'code_evenement');
     }
 
     public function violences(): BelongsToMany
@@ -111,5 +135,8 @@ class Incident extends Model
         return $this->belongsTo(Survivant::class, 'survivant_id', 'id');
     }
 
-    //public function violences() { return $this->belongsToMany(Violence::class, 'violence_incidents', 'id_incident', 'id_violence')->withPivot(['description_violence','created_by','created_at']); }
+    public function mouvements(): HasMany
+    {
+        return $this->hasMany(Mouvement::class, 'incident_id', 'id');
+    }
 }

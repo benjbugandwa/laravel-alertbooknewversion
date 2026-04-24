@@ -21,7 +21,11 @@ class Show extends Component
 
     public function refreshIncident(): void
     {
-        $this->incident->refresh()->load(['violences:id,violence_name,categorie_name']);
+        $this->incident->refresh()->load([
+            'violences:id,violence_name,categorie_name',
+            'province', 'territoire', 'zoneSante',
+            'chefferie', 'groupement', 'aireSante', 'evenement'
+        ]);
     }
 
     public function mount(Incident $incident): void
@@ -40,6 +44,8 @@ class Show extends Component
 
         $this->incident = $incident->load([
             'violences:id,violence_name,categorie_name',
+            'province', 'territoire', 'zoneSante',
+            'chefferie', 'groupement', 'aireSante', 'evenement'
         ]);
 
         // $this->incident = $incident;

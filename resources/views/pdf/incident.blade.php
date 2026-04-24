@@ -179,15 +179,19 @@
                         <td>{{ $incident->severite ?? '-' }}</td>
                     </tr>
                     <tr>
+                        <td>Événement</td>
+                        <td>{{ $incident->evenement->nom_evenement ?? '-' }}</td>
+                    </tr>
+                    <tr>
                         <td>Localisation</td>
                         <td>
-                            {{ $incident->province->nom_province ?? ($incident->code_province ?? '-') }}
-                            @if ($incident->zoneSante?->nom_zonesante || $incident->code_zonesante)
-                                — {{ $incident->zoneSante->nom_zonesante ?? $incident->code_zonesante }}
-                            @endif
-                            @if ($incident->localite)
-                                — {{ $incident->localite }}
-                            @endif
+                            <strong>Province :</strong> {{ $incident->province->nom_province ?? ($incident->code_province ?? '-') }}<br>
+                            <strong>Territoire :</strong> {{ $incident->territoire->nom_territoire ?? ($incident->code_territoire ?? '-') }}<br>
+                            <strong>Chefferie :</strong> {{ $incident->chefferie->nom_chefferie ?? ($incident->code_chefferie ?? '-') }}<br>
+                            <strong>Groupement :</strong> {{ $incident->groupement->nom_groupement ?? ($incident->code_groupement ?? '-') }}<br>
+                            <strong>Zone de santé :</strong> {{ $incident->zoneSante->nom_zonesante ?? ($incident->code_zonesante ?? '-') }}<br>
+                            <strong>Aire de santé :</strong> {{ $incident->aireSante->nom_airesante ?? ($incident->code_airesante ?? '-') }}<br>
+                            <strong>Localité :</strong> {{ $incident->localite ?? '-' }}
                         </td>
                     </tr>
                     <tr>

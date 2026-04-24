@@ -35,7 +35,7 @@
         </x-ui-card>
 
         <x-ui-card>
-            <div class="text-sm text-gray-600">Incidents (période)</div>
+            <div class="text-sm text-gray-600">Alertes (période)</div>
             <div class="mt-2 text-3xl font-bold">
                 {{ collect($chart['evolution']['data'])->sum() }}
             </div>
@@ -57,21 +57,21 @@
         x-on:livewire:navigated.window="rebuild(@js($chart))"
         x-on:chart-rebuild.window="rebuild(@js($chart))" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <x-ui-card>
-            <div class="font-semibold">Évolution des incidents ({{ $this->days }} jours)</div>
+            <div class="font-semibold">Évolution des alertes ({{ $this->days }} jours)</div>
             <div class="mt-3">
                 <canvas id="chartEvolution" height="120"></canvas>
             </div>
         </x-ui-card>
 
         <x-ui-card>
-            <div class="font-semibold">Incidents par statut</div>
+            <div class="font-semibold">Alertes par statut</div>
             <div class="mt-3">
                 <canvas id="chartStatus" height="120"></canvas>
             </div>
         </x-ui-card>
 
         <x-ui-card class="lg:col-span-2">
-            <div class="font-semibold">Incidents par province</div>
+            <div class="font-semibold">Alertes par province</div>
             <div class="mt-3">
                 <canvas id="chartProvince" height="90">
 

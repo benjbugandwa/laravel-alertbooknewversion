@@ -305,7 +305,7 @@ class IncidentService
         $row = DB::selectOne("SELECT nextval('incident_code_seq') as n");
         $n = (int) ($row->n ?? 1);
 
-        return 'INC-' . str_pad((string) $n, 6, '0', STR_PAD_LEFT);
+        return 'ALT-' . str_pad((string) $n, 6, '0', STR_PAD_LEFT);
     }
 
     private function notifySuperviseursNeedsValidation(Incident $incident): void

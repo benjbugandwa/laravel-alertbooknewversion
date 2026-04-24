@@ -2,10 +2,10 @@
 
 return [
     'app_name' => 'AlertBook',
-    'project' => 'Développé par Research For Development (RFD)',
+    'project' => 'Développé par UNHCR pour le cluster protection',
 
     'ribbon' => [
-        'platform' => 'Plateforme humanitaire — Gestion des incidents VBG',
+        'platform' => 'Plateforme humanitaire — Gestion des alertes',
         'secure_access' => 'Accès sécurisé',
         'switch_to' => 'English',
     ],
@@ -18,9 +18,9 @@ return [
     ],
 
     'hero' => [
-        'pill' => 'Système institutionnel de gestion de cas',
-        'title' => 'Gestion sécurisée, structurée et traçable des incidents VBG',
-        'subtitle' => "AlertBook soutient les organisations humanitaires dans l’enregistrement, la validation, le suivi et le référencement des incidents, avec un contrôle strict des accès et un journal d’audit.",
+        'pill' => 'Système institutionnel de gestion des alertes',
+        'title' => 'Gestion sécurisée,harmonisée et structurée des alertes',
+        'subtitle' => "AlertBook soutient les organisations humanitaires dans l’enregistrement, la validation, le suivi et le référencement des alertes, avec un contrôle strict des accès et un journal d’audit.",
         'cta_login' => 'Accéder à la plateforme',
         'cta_register' => 'Créer un compte',
         'process_label' => 'Processus :',
@@ -70,12 +70,12 @@ return [
             [
                 'icon' => '📌',
                 'title' => 'Enregistrement structuré',
-                'desc' => 'Création d’incidents avec validation, statut, sévérité, photo et localisation.',
+                'desc' => 'Création des alertes avec validation, statut, sévérité, photo et localisation.',
             ],
             [
                 'icon' => '🧩',
-                'title' => 'Types de violences',
-                'desc' => 'Association de plusieurs violences par incident, avec descriptions.',
+                'title' => 'Types de violations',
+                'desc' => 'Association de plusieurs violations par incident, avec descriptions.',
             ],
             [
                 'icon' => '📝',
@@ -110,7 +110,7 @@ return [
     ],
 
     'footer' => [
-        'tagline' => 'Gestion des incidents VBG — Projet Mukwege',
+        'tagline' => 'Gestion des alertes et Incidents associés — Projet AlertBook',
         'rights' => 'Tous droits réservés.',
     ],
 ];

@@ -29,6 +29,7 @@ class Index extends Component
     public string $f_province = '';
     public string $f_territoire = '';
     public string $f_zone = '';
+    public string $f_evenement = '';
     public ?string $date_from = null;
     public ?string $date_to = null;
 
@@ -169,6 +170,65 @@ class Index extends Component
     }
 
     #[Computed]
+    public function chefferies()
+    {
+        $codeTerritoire = $this->showModal ? $this->form->code_territoire : $this->f_territoire;
+
+        if (!$codeTerritoire) return [];
+
+        return DB::table('chefferies')
+            ->select('code_chefferie', 'nom_chefferie')
+            ->where('code_territoire', $codeTerritoire)
+            ->orderBy('nom_chefferie')
+            ->get()
+            ->map(fn($c) => ['code' => $c->code_chefferie, 'name' => $c->nom_chefferie])
+            ->toArray();
+    }
+
+    #[Computed]
+    public function groupements()
+    {
+        $codeChefferie = $this->showModal ? $this->form->code_chefferie : null;
+
+        if (!$codeChefferie) return [];
+
+        return DB::table('groupements')
+            ->select('code_groupement', 'nom_groupement')
+            ->where('code_chefferie', $codeChefferie)
+            ->orderBy('nom_groupement')
+            ->get()
+            ->map(fn($g) => ['code' => $g->code_groupement, 'name' => $g->nom_groupement])
+            ->toArray();
+    }
+
+    #[Computed]
+    public function airesantes()
+    {
+        $codeZone = $this->showModal ? $this->form->code_zonesante : null;
+
+        if (!$codeZone) return [];
+
+        return DB::table('airesantes')
+            ->select('code_airesante', 'nom_airesante')
+            ->where('code_zonesante', $codeZone)
+            ->orderBy('nom_airesante')
+            ->get()
+            ->map(fn($a) => ['code' => $a->code_airesante, 'name' => $a->nom_airesante])
+            ->toArray();
+    }
+
+    #[Computed]
+    public function evenements()
+    {
+        return DB::table('evenements')
+            ->select('code_evenement', 'nom_evenement')
+            ->orderBy('nom_evenement')
+            ->get()
+            ->map(fn($e) => ['code' => $e->code_evenement, 'name' => $e->nom_evenement])
+            ->toArray();
+    }
+
+    #[Computed]
     public function superviseursOptions()
     {
         if (!$this->assignIncidentId) return [];
@@ -237,10 +297,31 @@ class Index extends Component
     public function updatedFormCodeTerritoire(): void
     {
         $this->form->code_zonesante = '';
+        $this->form->code_chefferie = '';
+        $this->form->code_groupement = '';
+        $this->form->code_airesante = '';
         unset($this->zones);
+        unset($this->chefferies);
+        unset($this->groupements);
+    }
+
+    public function updatedFormCodeChefferie(): void
+    {
+        $this->form->code_groupement = '';
+        unset($this->groupements);
+    }
+
+    public function updatedFormCodeZonesante(): void
+    {
+        $this->form->code_airesante = '';
+        unset($this->airesantes);
     }
 
     public function updatingQ(): void
+    {
+        $this->resetPage();
+    }
+    public function updatingFZone(): void
     {
         $this->resetPage();
     }
@@ -249,6 +330,10 @@ class Index extends Component
         $this->resetPage();
     }
     public function updatingFSeverite(): void
+    {
+        $this->resetPage();
+    }
+    public function updatingFEvenement(): void
     {
         $this->resetPage();
     }
@@ -609,11 +694,13 @@ class Index extends Component
             ->where('incidents.statut_incident', '!=', 'Archivé')
             ->leftJoin('provinces', 'incidents.code_province', '=', 'provinces.code_province')
             ->leftJoin('zonesantes', 'incidents.code_zonesante', '=', 'zonesantes.code_zonesante')
+            ->leftJoin('evenements', 'incidents.code_evenement', '=', 'evenements.code_evenement')
             ->with(['violences:id,violence_name'])
             ->select([
                 'incidents.*',
                 DB::raw("COALESCE(provinces.nom_province, incidents.code_province, 'N/A') as province_name"),
                 DB::raw("COALESCE(zonesantes.nom_zonesante, incidents.code_zonesante, 'N/A') as zone_name"),
+                DB::raw("COALESCE(evenements.nom_evenement, incidents.code_evenement, 'N/A') as evenement_name"),
             ]);
 
         // Scope province
@@ -636,6 +723,7 @@ class Index extends Component
 
         if ($this->f_territoire !== '') $query->where('incidents.code_territoire', $this->f_territoire);
         if ($this->f_zone !== '') $query->where('incidents.code_zonesante', $this->f_zone);
+        if ($this->f_evenement !== '') $query->where('incidents.code_evenement', $this->f_evenement);
 
         if ($this->date_from) $query->whereDate('incidents.date_incident', '>=', $this->date_from);
         if ($this->date_to) $query->whereDate('incidents.date_incident', '<=', $this->date_to);

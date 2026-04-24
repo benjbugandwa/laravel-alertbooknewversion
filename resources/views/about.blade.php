@@ -6,6 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ __('A propos - AlertBook') }}</title>
 
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('images/logo/favicons/apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/logo/favicons/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('images/logo/favicons/favicon-16x16.png') }}">
+    <link rel="manifest" href="{{ asset('images/logo/favicons/site.webmanifest') }}">
+    <link rel="shortcut icon" href="{{ asset('images/logo/favicons/favicon.ico') }}">
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
