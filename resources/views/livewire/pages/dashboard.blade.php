@@ -1,4 +1,16 @@
-<div class="space-y-6">
+<div>
+    {{-- Spinner de chargement --}}
+    <div wire:loading class="fixed inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-sm">
+        <div class="flex flex-col items-center bg-white p-6 rounded-xl shadow-xl">
+            <svg class="h-10 w-10 animate-spin text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="mt-4 text-sm font-semibold text-gray-700">Actualisation des données...</span>
+        </div>
+    </div>
+
+    <div class="space-y-6">
     <div class="flex items-start justify-between gap-4">
         <div>
             <div class="text-2xl font-bold">Dashboard</div>
@@ -13,6 +25,22 @@
         </div>
 
         <div class="flex items-center gap-2">
+            @if ($chart['scope']['isSuper'])
+                <select wire:model.live="selectedProvince" class="text-sm border-gray-300 rounded-md py-1 pr-8">
+                    <option value="">Toutes les provinces</option>
+                    @foreach($provinces as $prov)
+                        <option value="{{ $prov->code_province }}">{{ $prov->nom_province }}</option>
+                    @endforeach
+                </select>
+                @if($selectedProvince)
+                    <select wire:model.live="selectedTerritoire" class="text-sm border-gray-300 rounded-md py-1 pr-8">
+                        <option value="">Tous les territoires</option>
+                        @foreach($territoires as $terr)
+                            <option value="{{ $terr->code_territoire }}">{{ $terr->nom_territoire }}</option>
+                        @endforeach
+                    </select>
+                @endif
+            @endif
             <x-ui-button size="sm" variant="secondary" wire:click="setDays(30)">30j</x-ui-button>
             <x-ui-button size="sm" variant="secondary" wire:click="setDays(90)">90j</x-ui-button>
             <x-ui-button size="sm" variant="secondary" wire:click="setDays(180)">180j</x-ui-button>
@@ -56,17 +84,24 @@
     <div x-data="dashboardCharts(@js($chart))" x-init="init()"
         x-on:livewire:navigated.window="rebuild(@js($chart))"
         x-on:chart-rebuild.window="rebuild(@js($chart))" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <x-ui-card>
+        <x-ui-card class="lg:col-span-2">
             <div class="font-semibold">Évolution des alertes ({{ $this->days }} jours)</div>
             <div class="mt-3">
-                <canvas id="chartEvolution" height="120"></canvas>
+                <canvas id="chartEvolution" height="80"></canvas>
             </div>
         </x-ui-card>
 
         <x-ui-card>
             <div class="font-semibold">Alertes par statut</div>
             <div class="mt-3">
-                <canvas id="chartStatus" height="120"></canvas>
+                <canvas id="chartStatus" height="200"></canvas>
+            </div>
+        </x-ui-card>
+
+        <x-ui-card>
+            <div class="font-semibold">Alertes par type d'événement</div>
+            <div class="mt-3">
+                <canvas id="chartEventType" height="200"></canvas>
             </div>
         </x-ui-card>
 
@@ -127,9 +162,19 @@
                 Top 15 provinces (ou votre province si vous n’êtes pas superadmin).
             </div>
         </x-ui-card>
+
+        {{-- Carte Territoires --}}
+        <x-ui-card class="lg:col-span-2">
+            <div class="font-semibold">Carte des incidents par Territoire</div>
+            <div class="mt-3 relative z-0 border border-gray-200 rounded-xl overflow-hidden" wire:ignore>
+                <div id="mapTerritoires" style="height: 500px; width: 100%; z-index: 1;"></div>
+            </div>
+        </x-ui-card>
     </div>
 
-    {{-- Chart.js + Alpine helper --}}
+    {{-- Chart.js, Leaflet + Alpine helper --}}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script>
@@ -139,11 +184,16 @@
                 charts: {
                     evolution: null,
                     status: null,
+                    eventType: null,
                     province: null,
                 },
+                map: null,
+                geoJsonLayer: null,
+                geoJsonData: null,
 
                 init() {
                     this.buildAll(this.payload);
+                    this.initMap();
 
                     // Quand Livewire re-render le composant (après clic sur 30j/90j/180j)
                     document.addEventListener('livewire:initialized', () => {
@@ -158,13 +208,16 @@
                     this.payload = newPayload;
                     this.destroyAll();
                     this.buildAll(this.payload);
+                    if (this.geoJsonData) {
+                        this.renderGeoJson();
+                    }
                 },
 
                 destroyAll() {
                     Object.values(this.charts).forEach(ch => {
                         if (ch) ch.destroy();
                     });
-                    this.charts.evolution = this.charts.status = this.charts.province = null;
+                    this.charts.evolution = this.charts.status = this.charts.eventType = this.charts.province = null;
                 },
 
 
@@ -172,9 +225,10 @@
                 buildAll(p) {
                     const ctxEvo = document.getElementById('chartEvolution');
                     const ctxStatus = document.getElementById('chartStatus');
+                    const ctxEventType = document.getElementById('chartEventType');
                     const ctxProv = document.getElementById('chartProvince');
 
-                    if (!ctxEvo || !ctxStatus || !ctxProv) return;
+                    if (!ctxEvo || !ctxStatus || !ctxEventType || !ctxProv) return;
 
                     // --- Style global (grilles claires + textes doux) ---
                     const gridColor = 'rgba(17, 24, 39, 0.08)'; // gris très léger
@@ -223,12 +277,12 @@
 
                     const commonTooltip = {
                         enabled: true,
-                        backgroundColor: 'rgba(17, 24, 39, 0.92)',
+                        backgroundColor: 'rgba(17, 24, 39, 0.95)',
                         titleColor: '#fff',
                         bodyColor: '#fff',
-                        padding: 10,
-                        cornerRadius: 10,
-                        displayColors: false,
+                        padding: 12,
+                        cornerRadius: 6,
+                        displayColors: true,
                     };
 
                     // Evolution (line)
@@ -310,7 +364,7 @@
                                         label: (ctx) => {
                                             const v = ctx.raw || 0;
                                             const pct = statusTotal ? Math.round((v / statusTotal) * 100) : 0;
-                                            return `${ctx.label}: ${v} (${pct}%)`;
+                                            return ` ${ctx.label}: ${v} (${pct}%)`;
                                         }
                                     }
                                 },
@@ -326,6 +380,60 @@
                                         return pct >= 6 ? `${pct}%` :
                                             ''; // n’affiche pas les petits % (lisibilité)
                                     },
+                                }
+                            },
+                        },
+                        plugins: [ChartDataLabels],
+                    });
+
+                    // EventType (bar horizontal)
+                    this.charts.eventType = new Chart(ctxEventType, {
+                        type: 'bar',
+                        data: {
+                            labels: p.byEventType.labels,
+                            datasets: [{
+                                label: 'Incidents',
+                                data: p.byEventType.data,
+                                backgroundColor: 'rgba(239, 68, 68, 0.85)', // rouge doux
+                                borderRadius: 4,
+                                maxBarThickness: 24,
+                            }],
+                        },
+                        options: {
+                            responsive: true,
+                            indexAxis: 'y', // Barres horizontales pour lire les textes longs
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
+                            },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    ...commonTooltip,
+                                    callbacks: {
+                                        label: (ctx) => ` Incidents: ${ctx.raw ?? 0}`
+                                    }
+                                },
+                                datalabels: {
+                                    color: tickColor,
+                                    anchor: 'end',
+                                    align: 'end',
+                                    offset: 4,
+                                    font: { size: 10, weight: '700' },
+                                    formatter: (v) => (v ? v : ''),
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { color: gridColor },
+                                    ticks: { color: tickColor, precision: 0 },
+                                    border: { color: borderColor },
+                                    beginAtZero: true,
+                                },
+                                y: {
+                                    grid: { display: false },
+                                    ticks: { color: tickColor, font: { size: 10 } },
+                                    border: { color: borderColor },
                                 }
                             },
                         },
@@ -402,15 +510,119 @@
                         },
                         plugins: [ChartDataLabels],
                     });
+                },
+
+                initMap() {
+                    const mapContainer = document.getElementById('mapTerritoires');
+                    if (!mapContainer) return;
+                    
+                    // Centre RDC
+                    this.map = L.map('mapTerritoires').setView([-4.0383, 21.7587], 5);
+
+                    // Fond de carte clair avec transparence
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+                        subdomains: 'abcd',
+                        maxZoom: 20,
+                        opacity: 0.6
+                    }).addTo(this.map);
+
+                    // Chargement du GeoJSON
+                    fetch('/cod_admin2_em.geojson')
+                        .then(res => res.json())
+                        .then(data => {
+                            this.geoJsonData = data;
+                            this.renderGeoJson();
+                        });
+                },
+
+                getColor(d) {
+                    // Dégradé de rouges
+                    return d > 100 ? '#67000d' :
+                           d > 50  ? '#a50f15' :
+                           d > 20  ? '#cb181d' :
+                           d > 10  ? '#ef3b2c' :
+                           d > 5   ? '#fb6a4a' :
+                           d > 0   ? '#fc9272' :
+                                     'rgba(240,240,240,0.5)'; // transparent/gris clair
+                },
+
+                renderGeoJson() {
+                    if (!this.map || !this.geoJsonData) return;
+                    if (this.geoJsonLayer) {
+                        this.map.removeLayer(this.geoJsonLayer);
+                    }
+
+                    const territoryData = this.payload.byTerritoire || {};
+
+                    // Filtrer par province si non superadmin
+                    let filteredFeatures = this.geoJsonData.features;
+                    if (!this.payload.scope.isSuper && this.payload.scope.code_province) {
+                        filteredFeatures = filteredFeatures.filter(f => 
+                            f.properties.adm1_pcode === this.payload.scope.code_province
+                        );
+                    }
+
+                    const geoDataToRender = {
+                        ...this.geoJsonData,
+                        features: filteredFeatures
+                    };
+
+                    this.geoJsonLayer = L.geoJSON(geoDataToRender, {
+                        style: (feature) => {
+                            let name = feature.properties.adm2_name ? feature.properties.adm2_name.toLowerCase().trim() : '';
+                            let count = territoryData[name] || 0;
+                            return {
+                                fillColor: this.getColor(count),
+                                weight: 2, // Contour renforcé
+                                opacity: 1,
+                                color: '#333', // Bordures foncées pour bien faire ressortir les territoires
+                                dashArray: '',
+                                fillOpacity: count > 0 ? 0.9 : 0.3
+                            };
+                        },
+                        onEachFeature: (feature, layer) => {
+                            let name = feature.properties.adm2_name || 'Inconnu';
+                            let count = territoryData[name.toLowerCase().trim()] || 0;
+                            
+                            let tooltipContent = `<div class="text-sm" style="font-family: inherit;"><div class="font-bold text-gray-800">${name}</div><div class="text-gray-600">Incidents: <span class="font-semibold text-gray-900">${count}</span></div></div>`;
+                            layer.bindTooltip(tooltipContent, {
+                                sticky: true,
+                                direction: 'top',
+                                className: 'bg-white border shadow p-2'
+                            });
+
+                            layer.on({
+                                mouseover: (e) => {
+                                    let l = e.target;
+                                    l.setStyle({
+                                        weight: 3,
+                                        color: '#000',
+                                        dashArray: '',
+                                        fillOpacity: 1
+                                    });
+                                    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                                        l.bringToFront();
+                                    }
+                                },
+                                mouseout: (e) => {
+                                    this.geoJsonLayer.resetStyle(e.target);
+                                }
+                            });
+                        }
+                    }).addTo(this.map);
+
+                    // Ajuster la vue si on n'est pas superadmin et qu'il y a des données
+                    if (!this.payload.scope.isSuper && filteredFeatures.length > 0) {
+                        this.map.fitBounds(this.geoJsonLayer.getBounds());
+                    } else if (this.payload.scope.isSuper) {
+                        // Remettre au centre par défaut
+                        this.map.setView([-4.0383, 21.7587], 5);
+                    }
                 }
-
-
-
-
-
-
 
             }
         }
     </script>
+</div>
 </div>
