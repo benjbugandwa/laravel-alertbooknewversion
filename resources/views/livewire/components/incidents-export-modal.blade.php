@@ -15,7 +15,7 @@
 
                 <div class="p-5 space-y-4 overflow-y-auto">
                     <div class="text-sm text-gray-600">
-                        Export CSV/Excel (incidents + survivants + notes + référencements) sur une période.
+                        Export CSV/Excel (incidents + notes + référencements) sur une période. Uniquement pour les incidents validés.
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -108,13 +108,8 @@
 
 
 
-                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600">
-                        @if (auth()->user()->user_role === 'superadmin')
-                            L’export contiendra les <strong>noms des survivants</strong>.
-                        @else
-                            L’export ne contiendra que les <strong>codes survivants</strong>.
-                        @endif
-                    </div>
+
+
                 </div>
 
                 <div class="px-5 py-4 border-t bg-white shrink-0 flex justify-end gap-2">

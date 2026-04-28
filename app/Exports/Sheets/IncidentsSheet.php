@@ -13,7 +13,7 @@ class IncidentsSheet implements FromCollection, WithHeadings
         public string $from,
         public string $to,
         public ?string $province,
-        public bool $includeSurvivantName,
+        public bool $includeSurvivantName, // Conservé pour la compatibilité avec le constructeur de l'export principal
         public bool $includeNotes,
         public bool $includeViolences,
     ) {}
@@ -31,9 +31,12 @@ class IncidentsSheet implements FromCollection, WithHeadings
             'localite',
             'code_evenement',
             'nom_evenement',
+            'description_faits',
+            'created_by',
+            'source_info',
+            'auteur_presume',
             'severite',
             'statut_incident',
-            'survivant',
         ];
 
         if ($this->includeViolences) {
@@ -51,7 +54,7 @@ class IncidentsSheet implements FromCollection, WithHeadings
     {
         $q = Incident::query()
             ->whereBetween('date_incident', [$this->from, $this->to])
-            ->where('statut_incident', '!=', 'Archivé')
+            ->where('statut_incident', 'Validé') // Uniquement les incidents validés
             ->with([
                 'province',
                 'zoneSante',
@@ -59,7 +62,7 @@ class IncidentsSheet implements FromCollection, WithHeadings
                 'groupement',
                 'aireSante',
                 'evenement',
-                'survivant',
+                'creator', // Pour récupérer le nom du créateur
             ]);
 
         if ($this->includeViolences) {
@@ -74,15 +77,8 @@ class IncidentsSheet implements FromCollection, WithHeadings
             $q->where('code_province', $this->province);
         }
 
-        return $q->get()->map(function ($inc) {
-            $survivant = '-';
-            if ($inc->survivant) {
-                $survivant = $this->includeSurvivantName
-                    ? ($inc->survivant->full_name ?? $inc->survivant->code_survivant)
-                    : ($inc->survivant->code_survivant ?? '-');
-            }
-
-            $row = [
+        return $q->get()->flatMap(function ($inc) {
+            $baseRow = [
                 $inc->code_incident,
                 optional($inc->date_incident)->format('Y-m-d'),
                 $inc->province->nom_province ?? $inc->code_province,
@@ -93,19 +89,19 @@ class IncidentsSheet implements FromCollection, WithHeadings
                 $inc->localite,
                 $inc->evenement->code_evenement ?? $inc->code_evenement,
                 $inc->evenement->nom_evenement ?? '-',
+                $inc->description_faits,
+                $inc->creator->name ?? $inc->created_by ?? '-',
+                $inc->source_info,
+                $inc->auteur_presume,
                 $inc->severite,
                 $inc->statut_incident,
-                $survivant,
             ];
 
-            if ($this->includeViolences) {
-                $row[] = ($inc->violences ?? collect())
-                    ->map(fn($v) => $v->violence_name)
-                    ->implode(' | ');
-            }
+            $violences = ($this->includeViolences && $inc->violences) ? $inc->violences : collect();
 
+            $notes = '';
             if ($this->includeNotes) {
-                $row[] = ($inc->caseNotes ?? collect())
+                $notes = ($inc->caseNotes ?? collect())
                     ->sortBy('created_at')
                     ->map(function ($n) {
                         $by = $n->author?->name ?? '-';
@@ -115,7 +111,32 @@ class IncidentsSheet implements FromCollection, WithHeadings
                     ->implode(' || ');
             }
 
-            return $row;
+            // Si aucune violence ou violences non incluses
+            if ($violences->isEmpty()) {
+                $row = $baseRow;
+                if ($this->includeViolences) {
+                    $row[] = '-'; // empty violence
+                }
+                if ($this->includeNotes) {
+                    $row[] = $notes;
+                }
+                return [$row];
+            }
+
+            // Si plusieurs violences, on duplique la ligne
+            $rows = [];
+            foreach ($violences as $v) {
+                $row = $baseRow;
+                if ($this->includeViolences) {
+                    $row[] = $v->violence_name;
+                }
+                if ($this->includeNotes) {
+                    $row[] = $notes;
+                }
+                $rows[] = $row;
+            }
+
+            return $rows;
         });
     }
 }
