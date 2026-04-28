@@ -80,10 +80,13 @@
         </x-ui-card>
     </div>
 
+    {{-- Payload caché pour mise à jour JS --}}
+    <div id="chart-data" class="hidden" data-payload="{{ json_encode($chart) }}"></div>
+
     {{-- Charts --}}
     <div x-data="dashboardCharts(@js($chart))" x-init="init()"
         x-on:livewire:navigated.window="rebuild(@js($chart))"
-        x-on:chart-rebuild.window="rebuild(@js($chart))" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <x-ui-card class="lg:col-span-2">
             <div class="font-semibold">Évolution des alertes ({{ $this->days }} jours)</div>
             <div class="mt-3">
@@ -195,11 +198,20 @@
                     this.buildAll(this.payload);
                     this.initMap();
 
-                    // Quand Livewire re-render le composant (après clic sur 30j/90j/180j)
+                    // Livewire 3: re-render charts après mise à jour du composant
                     document.addEventListener('livewire:initialized', () => {
-                        Livewire.hook('message.processed', (message, component) => {
-                            // Reconstruit après render
-                            window.dispatchEvent(new CustomEvent('chart-rebuild'));
+                        Livewire.hook('commit', ({ succeed }) => {
+                            succeed(() => {
+                                setTimeout(() => {
+                                    const el = document.getElementById('chart-data');
+                                    if (el && el.dataset.payload) {
+                                        const newData = JSON.parse(el.dataset.payload);
+                                        if (JSON.stringify(this.payload) !== JSON.stringify(newData)) {
+                                            this.rebuild(newData);
+                                        }
+                                    }
+                                }, 50);
+                            });
                         });
                     });
                 },
