@@ -88,11 +88,9 @@ class Index extends Component
         if (!Auth::user()?->isSuperAdmin()) abort(403);
 
         $this->validate([
-            'org_id' => ['required', 'exists:organisations,id'],
             'role_id' => ['required', 'exists:roles,id'],
             'code_province' => ['required', 'exists:provinces,code_province'],
         ], [
-            'org_id.required' => 'Veuillez sélectionner une organisation.',
             'role_id.required' => 'Veuillez sélectionner un rôle.',
             'code_province.required' => 'Veuillez sélectionner une province.',
             'code_province.exists' => 'Province invalide.',
@@ -101,11 +99,10 @@ class Index extends Component
         $u = User::findOrFail($this->selectedUserId);
 
         $role = Role::findOrFail($this->role_id);
-        $org  = Organisation::findOrFail($this->org_id);
+        $org  = $u->organisation;
 
         $wasInactive = ($u->is_active === false);
 
-        $u->org_id = $org->id;
         $u->code_province = $this->code_province;
         $u->is_active = true;
 

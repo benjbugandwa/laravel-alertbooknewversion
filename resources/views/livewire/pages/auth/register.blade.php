@@ -13,6 +13,13 @@ new #[Layout('layouts.guest')] class extends Component {
     public string $email = '';
     public string $password = '';
     public string $password_confirmation = '';
+    public $org_id = null;
+    public $organisations = [];
+
+    public function mount()
+    {
+        $this->organisations = \App\Models\Organisation::orderBy('org_name')->get();
+    }
 
     /**
      * Handle an incoming registration request.
@@ -24,6 +31,7 @@ new #[Layout('layouts.guest')] class extends Component {
                 'name' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . \App\Models\User::class],
                 'password' => ['required', 'string', \Illuminate\Validation\Rules\Password::defaults(), 'confirmed'],
+                'org_id' => ['required', 'exists:organisations,id'],
             ],
             [
                 'name.required' => 'Le nom est obligatoire.',
@@ -32,6 +40,8 @@ new #[Layout('layouts.guest')] class extends Component {
                 'email.unique' => 'Cette adresse e-mail est déjà utilisée.',
                 'password.required' => 'Le mot de passe est obligatoire.',
                 'password.confirmed' => 'Les mots de passe ne correspondent pas.',
+                'org_id.required' => 'L’organisation est obligatoire.',
+                'org_id.exists' => 'L’organisation sélectionnée est invalide.',
             ],
         );
 
@@ -42,7 +52,7 @@ new #[Layout('layouts.guest')] class extends Component {
 
             // ✅ logique GBV : en attente d'activation
             'is_active' => false,
-            'org_id' => null,
+            'org_id' => $validated['org_id'],
             'user_role' => null,
             // 'code_province' => null, // ou demandée au signup si tu veux
         ]);
@@ -93,6 +103,20 @@ new #[Layout('layouts.guest')] class extends Component {
                     placeholder="••••••••" />
                 <x-ui-input label="Confirmer le mot de passe" type="password" wire:model.defer="password_confirmation"
                     name="password_confirmation" placeholder="••••••••" />
+
+                <div class="space-y-1">
+                    <label class="text-sm font-medium text-gray-700">Organisation</label>
+                    <select wire:model.defer="org_id" name="org_id"
+                        class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
+                        <option value="">-- choisir --</option>
+                        @foreach ($organisations as $org)
+                            <option value="{{ $org->id }}">{{ $org->org_name }}</option>
+                        @endforeach
+                    </select>
+                    @error('org_id')
+                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
 
                 <x-ui-button type="submit" class="w-full" wire:loading.attr="disabled">
                     <span wire:loading.remove>Créer mon compte</span>

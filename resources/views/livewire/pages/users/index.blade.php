@@ -144,26 +144,6 @@
                     </div>
 
                     <div class="p-5 space-y-4">
-                        <div class="flex items-end gap-2">
-                            <div class="flex-1 space-y-1">
-                                <label class="text-sm font-medium text-gray-700">Organisation</label>
-                                <select wire:model="org_id"
-                                    class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
-                                    <option value="">-- choisir --</option>
-                                    @foreach ($organisations as $org)
-                                        <option value="{{ $org->id }}">{{ $org->org_name }}</option>
-                                    @endforeach
-                                </select>
-                                @error('org_id')
-                                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <x-ui-button size="sm" variant="secondary" wire:click="openCreateOrg">
-                                Nouvelle org
-                            </x-ui-button>
-                        </div>
-
                         <div class="space-y-1">
                             <label class="text-sm font-medium text-gray-700">Rôle</label>
                             <select wire:model="role_id"
