@@ -455,8 +455,8 @@ class Index extends Component
     {
         $incident = Incident::findOrFail($incidentId);
 
-        if ($this->isLocked($incident)) {
-            $this->dispatch('toast', message: "Incident clôturé/archivé : assignation impossible.", type: 'warning', duration: 6000);
+        if ($incident->statut_incident !== 'En attente') {
+            $this->dispatch('toast', message: "Seul un incident en attente peut être assigné.", type: 'warning', duration: 6000);
             return;
         }
 
@@ -488,8 +488,8 @@ class Index extends Component
 
         $incident = Incident::findOrFail($this->assignIncidentId);
 
-        if ($this->isLocked($incident)) {
-            $this->dispatch('toast', message: "Incident clôturé/archivé : assignation impossible.", type: 'warning', duration: 6000);
+        if ($incident->statut_incident !== 'En attente') {
+            $this->dispatch('toast', message: "Seul un incident en attente peut être assigné.", type: 'warning', duration: 6000);
             return;
         }
 
@@ -577,8 +577,8 @@ class Index extends Component
     {
         $incident = Incident::findOrFail($id);
 
-        if ($this->isLocked($incident)) {
-            $this->dispatch('toast', message: "Incident clôturé/archivé : validation impossible.", type: 'warning', duration: 6000);
+        if ($incident->statut_incident !== 'En attente') {
+            $this->dispatch('toast', message: "Seul un incident en attente peut être validé.", type: 'warning', duration: 6000);
             return;
         }
 

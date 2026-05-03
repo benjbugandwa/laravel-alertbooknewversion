@@ -127,8 +127,8 @@ class IncidentService
     ): Incident {
         return DB::transaction(function () use ($incident, $superviseurId, $actor, $ipAddress, $payload) {
 
-            if ($this->isLocked($incident)) {
-                throw new BusinessRuleException("Incident clôturé/archivé : assignation impossible.");
+            if ($incident->statut_incident !== 'En attente') {
+                throw new BusinessRuleException("Seul un incident en attente peut être assigné.");
             }
 
             // Seuls admin/superadmin
@@ -209,6 +209,14 @@ class IncidentService
 
             if ($incident->statut_incident === 'Validé') {
                 return $incident; // déjà validé
+            }
+
+            if ($incident->statut_incident !== 'En attente') {
+                throw new BusinessRuleException("Seul un incident en attente peut être validé.");
+            }
+
+            if ($incident->violences()->count() === 0) {
+                throw new BusinessRuleException("Impossible de valider : l'incident doit posséder au moins une violence documentée.");
             }
 
             $incident->statut_incident = 'Validé';

@@ -50,6 +50,8 @@ class Incident extends Model
         'code_groupement',
         'code_airesante',
         'code_evenement',
+        'longitude',
+        'latitude',
     ];
 
     protected $casts = [
