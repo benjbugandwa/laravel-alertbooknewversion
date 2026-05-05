@@ -26,13 +26,15 @@ class AccountActivatedNotification extends Notification implements ShouldQueue
 
     public function toMail($notifiable)
     {
+        $provinceName = \App\Models\Province::where('code_province', $this->codeProvince)->value('nom_province') ?? $this->codeProvince;
+
         return (new MailMessage)
             ->subject('Accès activé — AlertBook')
             ->view('emails.account-activated-html', [
                 'userName' => $notifiable->name,
                 'organisation' => $this->organisation->org_name,
                 'role' => $this->role->name,
-                'province' => $this->codeProvince,
+                'province' => $provinceName,
                 'loginUrl' => url('/login'),
             ]);
     }

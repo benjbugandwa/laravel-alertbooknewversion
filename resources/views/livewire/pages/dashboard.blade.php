@@ -29,14 +29,14 @@
                 <select wire:model.live="selectedProvince" class="text-sm border-gray-300 rounded-md py-1 pr-8">
                     <option value="">Toutes les provinces</option>
                     @foreach($provinces as $prov)
-                        <option value="{{ $prov->code_province }}">{{ $prov->nom_province }}</option>
+                        <option value="{{ $prov['code_province'] }}">{{ $prov['nom_province'] }}</option>
                     @endforeach
                 </select>
                 @if($selectedProvince)
                     <select wire:model.live="selectedTerritoire" class="text-sm border-gray-300 rounded-md py-1 pr-8">
                         <option value="">Tous les territoires</option>
                         @foreach($territoires as $terr)
-                            <option value="{{ $terr->code_territoire }}">{{ $terr->nom_territoire }}</option>
+                            <option value="{{ $terr['code_territoire'] }}">{{ $terr['nom_territoire'] }}</option>
                         @endforeach
                     </select>
                 @endif
