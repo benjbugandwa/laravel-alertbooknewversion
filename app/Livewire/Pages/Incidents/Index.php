@@ -129,8 +129,7 @@ class Index extends Component
     #[Computed]
     public function provinces()
     {
-        return DB::table('provinces')
-            ->select('code_province', 'nom_province')
+        return \App\Models\Province::select('code_province', 'nom_province')
             ->orderBy('nom_province')
             ->get()
             ->map(fn($p) => ['code' => $p->code_province, 'name' => $p->nom_province])
@@ -649,7 +648,10 @@ class Index extends Component
     public function shareWhatsapp(string $id): void
     {
         $incident = Incident::query()
-            ->leftJoin('provinces', 'incidents.code_province', '=', 'provinces.code_province')
+            ->leftJoin('provinces', function($join) {
+                $join->on('incidents.code_province', '=', 'provinces.code_province')
+                     ->where('provinces.is_active', 'YES');
+            })
             ->leftJoin('territoires', 'incidents.code_territoire', '=', 'territoires.code_territoire')
             ->leftJoin('zonesantes', 'incidents.code_zonesante', '=', 'zonesantes.code_zonesante')
             ->where('incidents.id', $id)
@@ -692,7 +694,10 @@ class Index extends Component
 
         $query = Incident::query()
             ->where('incidents.statut_incident', '!=', 'Archivé')
-            ->leftJoin('provinces', 'incidents.code_province', '=', 'provinces.code_province')
+            ->leftJoin('provinces', function($join) {
+                $join->on('incidents.code_province', '=', 'provinces.code_province')
+                     ->where('provinces.is_active', 'YES');
+            })
             ->leftJoin('zonesantes', 'incidents.code_zonesante', '=', 'zonesantes.code_zonesante')
             ->leftJoin('evenements', 'incidents.code_evenement', '=', 'evenements.code_evenement')
             ->with(['violences:id,violence_name'])

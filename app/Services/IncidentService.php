@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Exceptions\BusinessRuleException;
 use App\Mail\IncidentAssignedMail;
 use App\Mail\IncidentNeedsValidationMail;
+use App\Mail\NewIncidentNotificationMail;
+
 use App\Models\AuditLog;
 use App\Models\Incident;
 use App\Models\User;
@@ -27,15 +29,12 @@ class IncidentService
                 $payload['code_province'] = $actor->code_province;
             }
 
-            // Code unique via séquence (recommandé sur PostgreSQL)
-            $code = $this->nextIncidentCode();
-
             $incident = new Incident();
-            $incident->code_incident = $code;
+            $incident->fill($payload);
+
+            $incident->code_incident = $this->nextIncidentCode();
             $incident->created_by = $actor->id;
             $incident->last_status_changed_at = now();
-
-            $incident->fill($payload);
 
             if ($photo) {
                 $incident->photo_url = $photo->store('incidents', 'public');
@@ -57,9 +56,10 @@ class IncidentService
                 ]
             );
 
-            // $this->notifySuperviseursNeedsValidation($incident);
+            $this->notifySupervisorsOfNewIncident($incident);
 
             return $incident;
+
         });
     }
 
@@ -328,7 +328,7 @@ class IncidentService
             return;
         }
 
-        $provinceName = DB::table('provinces')->where('code_province', $incident->code_province)->value('nom_province') ?? '-';
+        $provinceName = DB::table('provinces')->where('code_province', $incident->code_province)->where('is_active', 'YES')->value('nom_province') ?? '-';
         $territoireName = $incident->code_territoire
             ? (DB::table('territoires')->where('code_territoire', $incident->code_territoire)->value('nom_territoire') ?? '-')
             : '-';
@@ -355,7 +355,7 @@ class IncidentService
     {
         if (!$superviseur->email) return;
 
-        $provinceName = DB::table('provinces')->where('code_province', $incident->code_province)->value('nom_province') ?? '-';
+        $provinceName = DB::table('provinces')->where('code_province', $incident->code_province)->where('is_active', 'YES')->value('nom_province') ?? '-';
         $territoireName = $incident->code_territoire
             ? (DB::table('territoires')->where('code_territoire', $incident->code_territoire)->value('nom_territoire') ?? '-')
             : '-';
@@ -377,4 +377,30 @@ class IncidentService
             )
         );
     }
+
+    private function notifySupervisorsOfNewIncident(Incident $incident): void
+    {
+        $supervisors = User::where('user_role', 'superviseur')
+            ->where('code_province', $incident->code_province)
+            ->where('is_active', true)
+            ->get();
+
+        if ($supervisors->isEmpty()) {
+            return;
+        }
+
+        $provinceName = $incident->province?->nom_province ?? '-';
+        $eventType = $incident->evenement?->nom_evenement ?? '-';
+        $reportingOrg = $incident->creator?->organisation?->name ?? 'Indépendante';
+
+        foreach ($supervisors as $supervisor) {
+            Mail::to($supervisor->email)->send(new NewIncidentNotificationMail(
+                $incident,
+                $reportingOrg,
+                $eventType,
+                $provinceName
+            ));
+        }
+    }
 }
+

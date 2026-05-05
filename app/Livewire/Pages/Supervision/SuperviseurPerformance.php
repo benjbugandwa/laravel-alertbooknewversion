@@ -36,8 +36,7 @@ class SuperviseurPerformance extends Component
     #[Computed]
     public function provinces(): array
     {
-        return DB::table('provinces')
-            ->select('code_province', 'nom_province')
+        return \App\Models\Province::select('code_province', 'nom_province')
             ->orderBy('nom_province')
             ->get()
             ->map(fn($p) => ['code' => $p->code_province, 'name' => $p->nom_province])

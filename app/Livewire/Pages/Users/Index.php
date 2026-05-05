@@ -89,11 +89,8 @@ class Index extends Component
 
         $this->validate([
             'role_id' => ['required', 'exists:roles,id'],
-            'code_province' => ['required', 'exists:provinces,code_province'],
         ], [
             'role_id.required' => 'Veuillez sélectionner un rôle.',
-            'code_province.required' => 'Veuillez sélectionner une province.',
-            'code_province.exists' => 'Province invalide.',
         ]);
 
         $u = User::findOrFail($this->selectedUserId);
@@ -103,7 +100,6 @@ class Index extends Component
 
         $wasInactive = ($u->is_active === false);
 
-        $u->code_province = $this->code_province;
         $u->is_active = true;
 
         // Optionnel: garder user_role en synchro

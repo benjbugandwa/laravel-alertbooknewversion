@@ -11,15 +11,26 @@ use Illuminate\Support\Facades\Log;
 
 class IncidentController extends Controller
 {
+    protected $incidentService;
+
+    public function __construct(\App\Services\IncidentService $incidentService)
+    {
+        $this->incidentService = $incidentService;
+    }
+
     /**
      * Reçoit et enregistre un incident depuis l'application mobile.
      */
     public function store(Request $request)
     {
+        Log::info('Requête de synchronisation reçue', [
+            'user' => $request->user()?->id,
+            'payload_id' => $request->input('id'),
+            'ip' => $request->ip()
+        ]);
         try {
             $data = $request->validate([
-                'id' => 'required|string', // UUID local du mobile (pour éviter les doublons en cas de retry)
-                'code_incident' => 'required|string', // ALT-000000
+                'id' => 'required|string', // UUID local du mobile (utilisé pour éviter les doublons)
                 'severite' => 'nullable|string',
                 'auteur_presume' => 'nullable|string',
                 'code_province' => 'nullable|string',
@@ -34,89 +45,48 @@ class IncidentController extends Controller
                 'longitude' => 'nullable|numeric',
                 'latitude' => 'nullable|numeric',
                 'code_evenement' => 'nullable|string',
-                'photo_url' => 'nullable|string', // Si c'est en base64
+                'photo_url' => 'nullable|string', // Base64
                 'created_at' => 'required|date',
             ]);
 
-            // Vérifier si cet incident exact a déjà été synchronisé (via son UUID généré hors-ligne)
-            $existingById = Incident::find($data['id']);
-            if ($existingById) {
+            // Vérifier si cet incident (par son UUID mobile) existe déjà sur le serveur
+            $existing = Incident::where('id', $data['id'])->first();
+            if ($existing) {
                 return response()->json([
-                    'status' => 'success',
-                    'message' => 'Incident déjà synchronisé',
-                    'incident' => $existingById
+                    'message' => 'Incident déjà synchronisé.',
+                    'incident' => $existing
                 ], 200);
             }
 
-            // Vérifier si le code_incident existe déjà (généré par un autre téléphone)
-            $existingByCode = Incident::where('code_incident', $data['code_incident'])->exists();
-            
-            $finalCode = $data['code_incident'];
-            if ($existingByCode) {
-                // Obtenir le code le plus grand (ça marche bien car ils sont formatés avec des zéros: ALT-000001)
-                $maxCode = Incident::where('code_incident', 'like', 'ALT-%')->max('code_incident');
-                $nextNumber = 1;
-                if ($maxCode) {
-                    $nextNumber = intval(substr($maxCode, 4)) + 1;
-                }
-                $finalCode = 'ALT-' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
-            }
+            // Préparation du payload pour le service
+            $payload = $data;
+            // date_incident est la date de création sur le mobile
+            $payload['date_incident'] = $data['created_at'];
+            $payload['statut_incident'] = 'En attente';
 
-            // Gestion de l'image Base64
+            // Gestion de la photo (Base64 -> Fichier physique)
             $photoPath = null;
             if (!empty($data['photo_url'])) {
-                // Décodage et enregistrement (A adapter selon le format reçu du mobile, ex: base64)
                 if (preg_match('/^data:image\/(\w+);base64,/', $data['photo_url'], $type)) {
-                    $data['photo_url'] = substr($data['photo_url'], strpos($data['photo_url'], ',') + 1);
-                    $type = strtolower($type[1]); // jpg, png, gif
-                    
+                    $base64Data = substr($data['photo_url'], strpos($data['photo_url'], ',') + 1);
+                    $type = strtolower($type[1]);
                     if (in_array($type, ['jpg', 'jpeg', 'gif', 'png'])) {
-                        $image = base64_decode($data['photo_url']);
-                        $imageName = 'incidents/' . $finalCode . '_' . time() . '.' . $type;
-                        Storage::disk('public')->put($imageName, $image);
+                        $imageContent = base64_decode($base64Data);
+                        $imageName = 'incidents/sync_' . uniqid() . '.' . $type;
+                        Storage::disk('public')->put($imageName, $imageContent);
                         $photoPath = $imageName;
                     }
                 }
             }
 
-            // Création de l'incident
-            $incident = new Incident();
-            $incident->id = $data['id']; // On garde l'UUID du mobile !
-            $incident->code_incident = $finalCode;
-            $incident->created_by = $request->user()->id; // L'utilisateur connecté via Sanctum
-            $incident->severite = $data['severite'];
-            $incident->statut_incident = 'En attente';
-            $incident->auteur_presume = $data['auteur_presume'] ?? null;
-            $incident->code_province = $data['code_province'] ?? null;
-            $incident->code_territoire = $data['code_territoire'] ?? null;
-            $incident->code_chefferie = $data['code_chefferie'] ?? null;
-            $incident->code_groupement = $data['code_groupement'] ?? null;
-            $incident->code_zonesante = $data['code_zonesante'] ?? null;
-            $incident->code_airesante = $data['code_airesante'] ?? null;
-            $incident->localite = $data['localite'] ?? null;
-            $incident->description_faits = $data['description_faits'];
-            $incident->source_info = $data['source_info'] ?? null;
-            $incident->longitude = $data['longitude'] ?? null;
-            $incident->latitude = $data['latitude'] ?? null;
-            $incident->code_evenement = $data['code_evenement'] ?? null;
-            $incident->photo_url = $photoPath;
-            // date_incident est la date sélectionnée (où l'incident a eu lieu)
-            $incident->date_incident = $data['created_at']; 
-            // created_at sera automatiquement géré par Laravel (date du jour d'envoi dans la BDD) 
-            $incident->save();
+            // Utilisation du service pour garantir la cohérence (Code, Province, Notifications, Audit)
+            // On passe null pour UploadedFile car on a géré le stockage manuellement pour le base64
+            // On injectera le photo_url dans le payload
+            if ($photoPath) {
+                $payload['photo_url'] = $photoPath;
+            }
 
-            // La table audit_logs devrait se remplir automatiquement si vous avez des Observers sur le modèle Incident.
-            // Si ce n'est pas le cas, on l'ajoute manuellement :
-            /*
-            AuditLog::create([
-                'user_id' => $request->user()->id,
-                'user_action' => 'Création via Mobile',
-                'model_type' => Incident::class,
-                'ip_address' => $request->ip(),
-                'action_meta' => json_encode(['source' => 'mobile_app', 'local_id' => $data['id']]),
-                'model_id' => $incident->id,
-            ]);
-            */
+            $incident = $this->incidentService->create($payload, null, $request->user(), $request->ip());
 
             return response()->json([
                 'status' => 'success',
@@ -128,7 +98,7 @@ class IncidentController extends Controller
             Log::error('Erreur lors de la synchro mobile : ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
-                'message' => 'Erreur de synchronisation'
+                'message' => 'Erreur de synchronisation : ' . $e->getMessage()
             ], 500);
         }
     }

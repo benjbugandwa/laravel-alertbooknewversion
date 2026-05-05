@@ -15,7 +15,14 @@ class Province extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
-    protected $fillable = ['code_province', 'nom_province'];
+    protected $fillable = ['code_province', 'nom_province', 'is_active'];
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope('active', function (\Illuminate\Database\Eloquent\Builder $builder) {
+            $builder->where('provinces.is_active', 'YES');
+        });
+    }
 
     public function territoires(): HasMany
     {

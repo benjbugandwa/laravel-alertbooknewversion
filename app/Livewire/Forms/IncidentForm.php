@@ -25,7 +25,7 @@ class IncidentForm extends Form
     #[Validate('nullable|string|max:255')]
     public ?string $auteur_presume = '';
 
-    #[Validate('required|string|exists:provinces,code_province')]
+    #[Validate('required|string|exists:provinces,code_province,is_active,YES')]
     public string $code_province = '';
 
     #[Validate('nullable|string|exists:territoires,code_territoire')]

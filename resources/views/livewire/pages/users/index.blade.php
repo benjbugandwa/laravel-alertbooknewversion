@@ -158,20 +158,7 @@
                             @enderror
                         </div>
 
-                        <div class="space-y-1">
-                            <label class="text-sm font-medium text-gray-700">Province</label>
-                            <select wire:model="code_province"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
-                                <option value="">-- choisir --</option>
-                                @foreach ($provinces as $p)
-                                    <option value="{{ $p->code_province }}">{{ $p->nom_province }}
-                                        ({{ $p->code_province }})</option>
-                                @endforeach
-                            </select>
-                            @error('code_province')
-                                <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
+                        {{-- Province enlevée car définie à l'enregistrement --}}
 
                         <div class="flex justify-end gap-2 pt-2">
                             <x-ui-button variant="secondary" wire:click="$set('showAssignModal', false)">

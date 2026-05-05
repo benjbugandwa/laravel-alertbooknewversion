@@ -21,7 +21,7 @@ class Dashboard extends Component
         $user = Auth::user();
         $isSuper = method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : ($user->user_role === 'superadmin');
         if ($isSuper) {
-            $this->provinces = DB::table('provinces')->orderBy('nom_province')->get()->toArray();
+            $this->provinces = \App\Models\Province::orderBy('nom_province')->get()->toArray();
         }
     }
 
@@ -52,8 +52,7 @@ class Dashboard extends Component
         $territoireScope = $isSuper ? ($this->selectedTerritoire ?: null) : null;
 
         if ($provinceScope) {
-            $provinceName = DB::table('provinces')
-                ->where('provinces.code_province', $provinceScope)
+            $provinceName = \App\Models\Province::where('code_province', $provinceScope)
                 ->value('nom_province');
         }
 
@@ -78,7 +77,10 @@ class Dashboard extends Component
         $cacheKeyProvince = "dashboard_inc_prov_" . ($provinceScope ?: 'all') . "_terr_" . ($territoireScope ?: 'all');
         $byProvince = Cache::remember($cacheKeyProvince, now()->addMinutes(15), function () use ($provinceScope, $territoireScope) {
             $q = DB::table('incidents')
-                ->leftJoin('provinces', 'incidents.code_province', '=', 'provinces.code_province')
+                ->leftJoin('provinces', function($join) {
+                    $join->on('incidents.code_province', '=', 'provinces.code_province')
+                         ->where('provinces.is_active', 'YES');
+                })
                 ->selectRaw("COALESCE(provinces.nom_province, incidents.code_province, 'N/A') as label, COUNT(*)::int as total");
             if ($provinceScope) $q->where('incidents.code_province', $provinceScope);
             if ($territoireScope) $q->where('incidents.code_territoire', $territoireScope);

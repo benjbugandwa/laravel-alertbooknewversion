@@ -14,11 +14,14 @@ new #[Layout('layouts.guest')] class extends Component {
     public string $password = '';
     public string $password_confirmation = '';
     public $org_id = null;
+    public string $code_province = '';
     public $organisations = [];
+    public $provinces = [];
 
     public function mount()
     {
         $this->organisations = \App\Models\Organisation::orderBy('org_name')->get();
+        $this->provinces = \App\Models\Province::where('is_active', 'YES')->orderBy('nom_province')->get();
     }
 
     /**
@@ -32,6 +35,7 @@ new #[Layout('layouts.guest')] class extends Component {
                 'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . \App\Models\User::class],
                 'password' => ['required', 'string', \Illuminate\Validation\Rules\Password::defaults(), 'confirmed'],
                 'org_id' => ['required', 'exists:organisations,id'],
+                'code_province' => ['required', 'exists:provinces,code_province'],
             ],
             [
                 'name.required' => 'Le nom est obligatoire.',
@@ -42,6 +46,8 @@ new #[Layout('layouts.guest')] class extends Component {
                 'password.confirmed' => 'Les mots de passe ne correspondent pas.',
                 'org_id.required' => 'L’organisation est obligatoire.',
                 'org_id.exists' => 'L’organisation sélectionnée est invalide.',
+                'code_province.required' => 'La province est obligatoire.',
+                'code_province.exists' => 'La province sélectionnée est invalide.',
             ],
         );
 
@@ -53,8 +59,8 @@ new #[Layout('layouts.guest')] class extends Component {
             // ✅ logique GBV : en attente d'activation
             'is_active' => false,
             'org_id' => $validated['org_id'],
+            'code_province' => $validated['code_province'],
             'user_role' => null,
-            // 'code_province' => null, // ou demandée au signup si tu veux
         ]);
 
         // Optionnel : garde l’event Registered si tu veux la vérif email plus tard
@@ -62,8 +68,8 @@ new #[Layout('layouts.guest')] class extends Component {
 
         // ✅ IMPORTANT : ne pas faire Auth::login($user)
 
-        // ✅ notifier les superadmins par email
-        \Illuminate\Support\Facades\Notification::send($this->superAdmins(), new \App\Notifications\NewAccountPendingActivationNotification($user));
+        // ✅ notifier les superadmins par email (filtrés par province)
+        \Illuminate\Support\Facades\Notification::send($this->superAdmins($user->code_province), new \App\Notifications\NewAccountPendingActivationNotification($user));
 
         // ✅ message à l'utilisateur
         session()->flash('success', 'Compte créé avec succès. Un administrateur va l’activer avant votre première connexion.');
@@ -73,13 +79,14 @@ new #[Layout('layouts.guest')] class extends Component {
     }
 
     /**
-     * Récupère les superadmins (pivot roles_users + roles.slug)
+     * Récupère les superadmins (pivot roles_users + roles.slug) filtrés par province
      */
-    protected function superAdmins()
+    protected function superAdmins(string $codeProvince)
     {
         return \App\Models\User::query()
             ->whereHas('roles', fn($q) => $q->where('slug', 'superadmin'))
-            ->where('is_active', true) // optionnel : éviter d’écrire aux superadmins inactifs
+            ->where('code_province', $codeProvince)
+            ->where('is_active', true)
             ->get();
     }
 }; ?>
@@ -104,18 +111,34 @@ new #[Layout('layouts.guest')] class extends Component {
                 <x-ui-input label="Confirmer le mot de passe" type="password" wire:model.defer="password_confirmation"
                     name="password_confirmation" placeholder="••••••••" />
 
-                <div class="space-y-1">
-                    <label class="text-sm font-medium text-gray-700">Organisation</label>
-                    <select wire:model.defer="org_id" name="org_id"
-                        class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
-                        <option value="">-- choisir --</option>
-                        @foreach ($organisations as $org)
-                            <option value="{{ $org->id }}">{{ $org->org_name }}</option>
-                        @endforeach
-                    </select>
-                    @error('org_id')
-                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
-                    @enderror
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="text-sm font-medium text-gray-700">Province</label>
+                        <select wire:model.defer="code_province" name="code_province"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#0B4F8A] focus:border-[#0B4F8A]">
+                            <option value="">-- choisir --</option>
+                            @foreach ($provinces as $p)
+                                <option value="{{ $p->code_province }}">{{ $p->nom_province }}</option>
+                            @endforeach
+                        </select>
+                        @error('code_province')
+                            <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-sm font-medium text-gray-700">Organisation</label>
+                        <select wire:model.defer="org_id" name="org_id"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#0B4F8A] focus:border-[#0B4F8A]">
+                            <option value="">-- choisir --</option>
+                            @foreach ($organisations as $org)
+                                <option value="{{ $org->id }}">{{ $org->org_name }}</option>
+                            @endforeach
+                        </select>
+                        @error('org_id')
+                            <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
                 </div>
 
                 <x-ui-button type="submit" class="w-full" wire:loading.attr="disabled">

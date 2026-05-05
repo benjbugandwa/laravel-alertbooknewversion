@@ -61,8 +61,7 @@ class Index extends Component
             ->map(fn($p) => ['code' => $p->code_province, 'name' => $p->nom_province])
             ->toArray();*/
 
-        $provinces = DB::table('provinces')
-            ->select('code_province', 'nom_province')
+        $provinces = \App\Models\Province::select('code_province', 'nom_province')
             ->orderBy('nom_province')
             ->get();
 
@@ -157,7 +156,7 @@ class Index extends Component
                 Rule::unique('service_providers', 'provider_name')->ignore($id),
             ],
             'form.provider_location' => ['required', 'array', 'min:1'],
-            'form.provider_location.*' => ['string', Rule::exists('provinces', 'code_province')],
+            'form.provider_location.*' => ['string', Rule::exists('provinces', 'code_province')->where('is_active', 'YES')],
 
             'form.focalpoint_name' => ['nullable', 'string', 'max:255'],
             'form.focalpoint_email' => ['nullable', 'email', 'max:255'],
