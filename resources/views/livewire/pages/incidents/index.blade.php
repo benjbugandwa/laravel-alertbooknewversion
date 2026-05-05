@@ -325,12 +325,16 @@
                         <div class="space-y-1">
                             <label class="text-sm font-medium text-gray-700">Statut *</label>
                             <select wire:model.defer="form.statut_incident"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white"
+                                @disabled(!$editing)>
                                 <option value="En attente">En attente</option>
                                 <option value="Validé">Validé</option>
                                 <option value="Cloturée">Cloturée</option>
                                 <option value="Archivé">Archivé</option>
                             </select>
+                            @if(!$editing)
+                                <div class="text-[10px] text-gray-500 italic">Le statut par défaut est "En attente" lors de la création.</div>
+                            @endif
                             @error('form.statut_incident')
                                 <div class="text-sm text-red-600">{{ $message }}</div>
                             @enderror
@@ -455,8 +459,18 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <x-ui-input label="Auteur présumé (optionnel)" wire:model.defer="form.auteur_presume"
                             name="auteur_presume" />
-                        <x-ui-input label="Source d'information" wire:model.defer="form.source_info"
-                            name="source_info" />
+                        <div class="space-y-1">
+                            <label class="text-sm font-medium text-gray-700">Source d'information *</label>
+                            <select wire:model.defer="form.source_info"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
+                                @foreach ($this->sourceInfoOptions as $opt)
+                                    <option value="{{ $opt }}">{{ $opt }}</option>
+                                @endforeach
+                            </select>
+                            @error('form.source_info')
+                                <div class="text-sm text-red-600">{{ $message }}</div>
+                            @enderror
+                        </div>
                     </div>
 
                     <div class="space-y-1">

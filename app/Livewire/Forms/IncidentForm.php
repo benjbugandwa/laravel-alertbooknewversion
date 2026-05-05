@@ -16,7 +16,7 @@ class IncidentForm extends Form
     #[Validate('required|date|before_or_equal:today')]
     public ?string $date_incident = null;
 
-    #[Validate('required|in:Faible,Elevée,Critique')]
+    #[Validate('required|in:Faible,Moyenne,Élevée,Critique')]
     public string $severite = 'Faible';
 
     #[Validate('required|in:En attente,Validé,Cloturée,Archivé')]
@@ -37,8 +37,8 @@ class IncidentForm extends Form
     #[Validate('nullable|string|max:255')]
     public ?string $localite = '';
 
-    #[Validate('nullable|string|max:255')]
-    public ?string $source_info = '';
+    #[Validate('required|in:Population locale,Humanitaires,Autorités administratives,Société civile,Autres')]
+    public ?string $source_info = 'Population locale';
 
     #[Validate('nullable|string')]
     public ?string $description_faits = '';

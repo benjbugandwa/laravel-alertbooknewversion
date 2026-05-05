@@ -247,7 +247,13 @@ class Index extends Component
     #[Computed]
     public function severityOptions()
     {
-        return ['Faible', 'Elevée', 'Critique'];
+        return ['Faible', 'Moyenne', 'Élevée', 'Critique'];
+    }
+
+    #[Computed]
+    public function sourceInfoOptions()
+    {
+        return ['Population locale', 'Humanitaires', 'Autorités administratives', 'Société civile', 'Autres'];
     }
 
     #[Computed]
