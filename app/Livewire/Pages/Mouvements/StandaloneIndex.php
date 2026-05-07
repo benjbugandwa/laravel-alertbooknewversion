@@ -40,6 +40,16 @@ class StandaloneIndex extends Component
     
     public array $all_incidents = [];
 
+    // Export Filters
+    public bool $showExportModal = false;
+    public string $exp_start_date = '';
+    public string $exp_end_date = '';
+    public string $exp_province = '';
+    public string $exp_territoire = '';
+    public string $exp_zonesante = '';
+    public array $exp_territoires = [];
+    public array $exp_zones = [];
+
     public function mount()
     {
         $user = Auth::user();
@@ -188,6 +198,45 @@ class StandaloneIndex extends Component
 
         Mouvement::destroy($id);
         $this->dispatch('toast', message: 'Mouvement supprimé.', type: 'success');
+    }
+
+    // Export Logic
+    public function openExport()
+    {
+        $this->showExportModal = true;
+    }
+
+    public function updatedExpProvince()
+    {
+        $this->exp_territoires = Territoire::where('code_province', $this->exp_province)->orderBy('nom_territoire')->get()->toArray();
+        $this->exp_territoire = '';
+        $this->exp_zones = [];
+        $this->exp_zonesante = '';
+    }
+
+    public function updatedExpTerritoire()
+    {
+        $this->exp_zones = ZoneSante::where('code_territoire', $this->exp_territoire)->orderBy('nom_zonesante')->get()->toArray();
+        $this->exp_zonesante = '';
+    }
+
+    public function export()
+    {
+        $filters = [
+            'start_date' => $this->exp_start_date,
+            'end_date' => $this->exp_end_date,
+            'territoire' => $this->exp_territoire,
+            'zonesante' => $this->exp_zonesante,
+        ];
+
+        $filename = 'export_mouvements_' . now()->format('Ymd_His') . '.xlsx';
+        
+        $this->showExportModal = false;
+        
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\MovementsExport($filters), 
+            $filename
+        );
     }
 
     public function render()

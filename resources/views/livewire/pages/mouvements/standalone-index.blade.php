@@ -16,10 +16,16 @@
             <h1 class="text-2xl font-bold text-gray-900">Mouvements de population</h1>
             <p class="text-sm text-gray-500">Suivi des déplacements, fuites et retours de populations.</p>
         </div>
-        <x-ui-button wire:click="openCreate">
-            <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
-            Nouveau déplacement
-        </x-ui-button>
+        <div class="flex gap-2">
+            <x-ui-button variant="secondary" wire:click="openExport">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4 mr-2"></i>
+                Exporter en Excel
+            </x-ui-button>
+            <x-ui-button wire:click="openCreate">
+                <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+                Nouveau déplacement
+            </x-ui-button>
+        </div>
     </div>
 
     {{-- Filtres --}}
@@ -311,6 +317,73 @@
                             <span wire:loading>Traitement...</span>
                         </x-ui-button>
                     </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Modal Export --}}
+    @if($showExportModal)
+        <div class="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" wire:click="$set('showExportModal', false)"></div>
+            <div class="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl border overflow-hidden">
+                <div class="bg-white border-b px-6 py-4 flex items-center justify-between">
+                    <h2 class="text-lg font-bold text-gray-900">Paramètres de l'export Excel</h2>
+                    <button wire:click="$set('showExportModal', false)" class="text-gray-400 hover:text-gray-600">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <div class="p-6 space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Date début</label>
+                            <input type="date" wire:model="exp_start_date" class="w-full text-sm border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Date fin</label>
+                            <input type="date" wire:model="exp_end_date" class="w-full text-sm border-gray-300 rounded-lg">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Province d'accueil</label>
+                        <select wire:model.live="exp_province" class="w-full text-sm border-gray-300 rounded-lg">
+                            <option value="">Toutes les provinces</option>
+                            @foreach($provinces as $p)
+                                <option value="{{ $p['code_province'] }}">{{ $p['nom_province'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Territoire</label>
+                            <select wire:model.live="exp_territoire" class="w-full text-sm border-gray-300 rounded-lg">
+                                <option value="">Tous les territoires</option>
+                                @foreach($exp_territoires as $t)
+                                    <option value="{{ $t['code_territoire'] }}">{{ $t['nom_territoire'] }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Zone de santé</label>
+                            <select wire:model.live="exp_zonesante" class="w-full text-sm border-gray-300 rounded-lg">
+                                <option value="">Toutes les zones</option>
+                                @foreach($exp_zones as $z)
+                                    <option value="{{ $z['code_zonesante'] }}">{{ $z['nom_zonesante'] }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 border-t px-6 py-4 flex justify-end gap-3">
+                    <x-ui-button variant="secondary" wire:click="$set('showExportModal', false)">Annuler</x-ui-button>
+                    <x-ui-button wire:click="export" wire:loading.attr="disabled">
+                        <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                        Générer le fichier
+                    </x-ui-button>
                 </div>
             </div>
         </div>
