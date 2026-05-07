@@ -70,6 +70,11 @@
                     <x-nav-link href="{{ route('incidents.index') }}" :active="request()->routeIs('incidents.*')"
                         icon="alert-triangle">Alertes</x-nav-link>
 
+                    @if(auth()->user()->user_role !== 'moniteur')
+                        <x-nav-link href="{{ route('mouvements.standalone') }}" :active="request()->routeIs('mouvements.*')"
+                            icon="truck">Déplacements</x-nav-link>
+                    @endif
+
 
                     <x-nav-link href="{{ route('service-providers.index') }}" :active="request()->routeIs('providers.*')" icon="building-2">
                         Structures de prise en charge
@@ -124,20 +129,25 @@
                     <div class="text-xs uppercase tracking-wide text-gray-500 mb-2">Navigation</div>
                     <nav class="space-y-1">
                         <x-nav-link href="{{ route('dashboard') }}" :active="request()->is('/')"
-                            @click="close()">Dashboard</x-nav-link>
+                            icon="layout-dashboard" @click="close()">Dashboard</x-nav-link>
                         <x-nav-link href="{{ route('documents.index') }}" :active="false"
-                            @click="close()">Documents</x-nav-link>
+                            icon="folder" @click="close()">Documents</x-nav-link>
                         <x-nav-link href="{{ route('incidents.index') }}" :active="false"
-                            @click="close()">Alertes</x-nav-link>
+                            icon="alert-triangle" @click="close()">Alertes</x-nav-link>
+
+                        @if(auth()->user()->user_role !== 'moniteur')
+                            <x-nav-link href="{{ route('mouvements.standalone') }}" :active="false"
+                                icon="truck" @click="close()">Déplacements</x-nav-link>
+                        @endif
                         <x-nav-link href="{{ route('service-providers.index') }}" :active="false"
-                            @click="close()">Structures</x-nav-link>
+                            icon="building-2" @click="close()">Structures</x-nav-link>
                         <x-nav-link href="{{ route('organisations.index') }}" :active="false"
-                            @click="close()">Organisations</x-nav-link>
+                            icon="building-2" @click="close()">Organisations</x-nav-link>
                         <x-nav-link href="{{ route('users.index') }}" :active="false"
-                            @click="close()">Utilisateurs</x-nav-link>
+                            icon="users" @click="close()">Utilisateurs</x-nav-link>
                         <x-nav-link href="{{ route('supervision.performance') }}" :active="false"
-                            @click="close()">Performance superviseurs</x-nav-link>
-                        <x-nav-link href="{{ route('profile') }}" :active="false" @click="close()">Mon
+                            icon="chart-line" @click="close()">Performance superviseurs</x-nav-link>
+                        <x-nav-link href="{{ route('profile') }}" :active="false" icon="user-pen" @click="close()">Mon
                             profil</x-nav-link>
 
 

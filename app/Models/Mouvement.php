@@ -26,6 +26,7 @@ class Mouvement extends Model
         'estim_nbre_personnes',
         'remarques_mouvement',
         'incident_id',
+        'cause_deplacement',
     ];
 
     protected $casts = [
@@ -52,5 +53,25 @@ class Mouvement extends Model
     public function territoireAccl(): BelongsTo
     {
         return $this->belongsTo(Territoire::class, 'code_territoire_accl', 'code_territoire');
+    }
+
+    public function provinceProv(): BelongsTo
+    {
+        return $this->belongsTo(Province::class, 'code_province_prov', 'code_province');
+    }
+
+    public function provinceAccl(): BelongsTo
+    {
+        return $this->belongsTo(Province::class, 'code_province_accl', 'code_province');
+    }
+
+    public function zoneSanteProv(): BelongsTo
+    {
+        return $this->belongsTo(ZoneSante::class, 'code_zonesante_prov', 'code_zonesante');
+    }
+
+    public function zoneSanteAccl(): BelongsTo
+    {
+        return $this->belongsTo(ZoneSante::class, 'code_zonesante_accl', 'code_zonesante');
     }
 }

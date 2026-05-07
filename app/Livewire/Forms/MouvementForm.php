@@ -32,6 +32,8 @@ class MouvementForm extends Form
     public $estim_nbre_personnes = null;
 
     public ?string $remarques_mouvement = null;
+    public ?string $incident_id = null;
+    public ?string $cause_deplacement = null;
 
     public function rules()
     {
@@ -43,12 +45,12 @@ class MouvementForm extends Form
             'code_province_prov' => ['required', 'string'],
             'code_territoire_prov' => ['required', 'string'],
             'code_zonesante_prov' => ['nullable', 'string'],
-            'localite_prov' => ['required', 'string', 'different:localite_accl'],
+            'localite_prov' => ['required', 'string'],
             
             'code_province_accl' => ['required', 'string'],
             'code_territoire_accl' => ['required', 'string'],
-            'code_zonesante_accl' => ['nullable', 'string'],
-            'localite_accl' => ['required', 'string', 'different:localite_prov'],
+            'code_zonesante_accl' => ['nullable', 'string', 'different:code_zonesante_prov'],
+            'localite_accl' => ['required', 'string'],
             
             'type_logement' => ['nullable', 'in:Site spontané,Centre collectif,Famille accueil,Autre'],
             
@@ -56,7 +58,23 @@ class MouvementForm extends Form
             'estim_nbre_personnes' => ['required', 'integer', 'min:1', 'gte:estim_nbre_menages'],
             
             'remarques_mouvement' => ['nullable', 'string'],
+            'incident_id' => ['nullable', 'exists:incidents,id'],
+            'cause_deplacement' => ['required_without:incident_id', 'nullable', 'string', 'max:255'],
         ];
+    }
+
+    /**
+     * Nettoyage des données avant insertion (évite les chaînes vides pour les UUID)
+     */
+    public function getData()
+    {
+        $data = $this->all();
+        
+        if (isset($data['incident_id']) && $data['incident_id'] === '') {
+            $data['incident_id'] = null;
+        }
+        
+        return $data;
     }
 
     public function messages()
@@ -65,6 +83,7 @@ class MouvementForm extends Form
             'date_mouvement.before_or_equal' => 'La date du mouvement ne peut pas être dans le futur.',
             'localite_prov.different' => 'La localité de provenance doit être différente de la localité d\'accueil.',
             'localite_accl.different' => 'La localité d\'accueil doit être différente de la localité de provenance.',
+            'code_zonesante_accl.different' => 'La zone de santé d\'accueil ne peut pas être la même que celle de provenance.',
             'estim_nbre_menages.min' => 'Le nombre de ménages doit être au moins de 1.',
             'estim_nbre_personnes.min' => 'Le nombre de personnes doit être au moins de 1.',
             'estim_nbre_personnes.gte' => 'Le nombre de personnes ne peut pas être inférieur au nombre de ménages.',
@@ -92,5 +111,7 @@ class MouvementForm extends Form
         $this->estim_nbre_menages = $mouvement->estim_nbre_menages;
         $this->estim_nbre_personnes = $mouvement->estim_nbre_personnes;
         $this->remarques_mouvement = $mouvement->remarques_mouvement;
+        $this->incident_id = $mouvement->incident_id;
+        $this->cause_deplacement = $mouvement->cause_deplacement;
     }
 }

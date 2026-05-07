@@ -130,13 +130,13 @@ class Dashboard extends Component
             return $q->groupBy('d')->orderBy('d')->get();
         });
 
-        // --------- Incidents par territoire pour la carte (Cache 15 min) ----------
-        $cacheKeyTerritoire = "dashboard_inc_terr_" . ($provinceScope ?: 'all') . "_terr_" . ($territoireScope ?: 'all');
-        $byTerritoire = Cache::remember($cacheKeyTerritoire, now()->addMinutes(15), function () use ($provinceScope, $territoireScope) {
+        // --------- Incidents par chefferie pour la carte (Cache 15 min) ----------
+        $cacheKeyChefferie = "dashboard_inc_chef_" . ($provinceScope ?: 'all') . "_terr_" . ($territoireScope ?: 'all');
+        $byChefferie = Cache::remember($cacheKeyChefferie, now()->addMinutes(15), function () use ($provinceScope, $territoireScope) {
             $q = DB::table('incidents')
-                ->leftJoin('territoires', 'incidents.code_territoire', '=', 'territoires.code_territoire')
-                ->selectRaw("territoires.nom_territoire as label, COUNT(*)::int as total")
-                ->whereNotNull('territoires.nom_territoire');
+                ->leftJoin('chefferies', 'incidents.code_chefferie', '=', 'chefferies.code_chefferie')
+                ->selectRaw("chefferies.nom_chefferie as label, COUNT(*)::int as total")
+                ->whereNotNull('chefferies.nom_chefferie');
             if ($provinceScope) $q->where('incidents.code_province', $provinceScope);
             if ($territoireScope) $q->where('incidents.code_territoire', $territoireScope);
             return $q->groupBy('label')->get();
@@ -166,13 +166,14 @@ class Dashboard extends Component
                 'labels' => $evolution->pluck('d')->values(),
                 'data' => $evolution->pluck('total')->values(),
             ],
-            'byTerritoire' => $byTerritoire->mapWithKeys(function ($item) {
+            'byChefferie' => $byChefferie->mapWithKeys(function ($item) {
                 return [strtolower(trim($item->label)) => $item->total];
             })->toArray(),
             'scope' => [
                 'isSuper' => $isSuper,
                 'code_province' => $provinceScope,
                 'nom_province' => $provinceName,
+                'code_territoire' => $territoireScope,
             ],
         ];
 

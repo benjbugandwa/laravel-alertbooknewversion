@@ -29,13 +29,41 @@ class IncidentPrintController extends Controller
             'assignedTo',    // relation user superviseur assigné (si tu as assigned_to)
             'violences',     // pivot violence_incidents
             'referencements.provider', // provider pour focal point
+            'mouvements.territoireProv',
+            'mouvements.territoireAccl',
         ]);
+
+        // Préparer la carte en base64 (plus fiable pour DomPDF)
+        $mapBase64 = null;
+        if ($incident->latitude && $incident->longitude) {
+            $lon = (float) $incident->longitude;
+            $lat = (float) $incident->latitude;
+            // Yandex Static Maps
+            $mapUrl = "https://static-maps.yandex.ru/1.x/?ll={$lon},{$lat}&z=13&l=map&pt={$lon},{$lat},pm2rdm&size=600,300";
+            
+            try {
+                $context = stream_context_create([
+                    "ssl" => ["verify_peer" => false, "verify_peer_name" => false],
+                ]);
+                $mapData = @file_get_contents($mapUrl, false, $context);
+                if ($mapData) {
+                    $mapBase64 = 'data:image/png;base64,' . base64_encode($mapData);
+                }
+            } catch (\Exception $e) {
+                // On laisse mapBase64 à null
+            }
+        }
 
         $pdf = Pdf::loadView('pdf.incident', [
             'incident' => $incident,
             'generatedBy' => $user,
             'generatedAt' => now(),
-        ])->setPaper('a4', 'portrait');
+            'mapBase64' => $mapBase64,
+        ])->setPaper('a4', 'portrait')
+          ->setOptions([
+              'isRemoteEnabled' => true,
+              'isHtml5ParserEnabled' => true,
+          ]);
 
         // Nom fichier
         $filename = 'Fiche-Incident-' . $incident->code_incident . '.pdf';

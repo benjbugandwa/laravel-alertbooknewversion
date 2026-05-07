@@ -167,10 +167,62 @@
         </x-ui-card>
 
         {{-- Carte Territoires --}}
-        <x-ui-card class="lg:col-span-2">
-            <div class="font-semibold">Carte des incidents par Territoire</div>
-            <div class="mt-3 relative z-0 border border-gray-200 rounded-xl overflow-hidden" wire:ignore>
-                <div id="mapTerritoires" style="height: 500px; width: 100%; z-index: 1;"></div>
+        <x-ui-card class="lg:col-span-2 relative overflow-hidden">
+            <div class="flex items-center justify-between mb-4">
+                <div class="font-bold text-gray-800 text-lg">Répartition géographique des incidents</div>
+                <div class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Chefferies / Secteurs (RDC)</div>
+            </div>
+            
+            <div class="relative z-0 border border-gray-200 rounded-2xl overflow-hidden shadow-sm" wire:ignore>
+                <div id="mapChefferies" style="height: 600px; width: 100%; z-index: 1;"></div>
+                
+                <!-- Info Panel Overlay (UNHCR Style) -->
+                <div id="mapInfoPanel" class="absolute top-4 right-4 z-[1000] bg-white/95 backdrop-blur-md border border-gray-200 rounded-xl p-5 shadow-2xl w-64 transform translate-x-80 transition-transform duration-300">
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 id="panelChefferieName" class="font-bold text-onu text-xl leading-tight">Chefferie</h3>
+                        <button onclick="document.getElementById('mapInfoPanel').classList.add('translate-x-80')" class="text-gray-400 hover:text-gray-600 bg-gray-50 rounded-full p-1 leading-none">✕</button>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Nombre d'incidents</div>
+                            <div id="panelIncidentCount" class="text-4xl font-black text-gray-900">0</div>
+                        </div>
+                        <div class="pt-3 border-t border-gray-100">
+                             <div class="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1.5">Impact Relatif</div>
+                             <div class="w-full bg-gray-100 rounded-full h-2 mb-1">
+                                <div id="panelPercentBar" class="bg-onu h-2 rounded-full" style="width: 0%"></div>
+                             </div>
+                             <div id="panelPercentText" class="text-xs font-bold text-gray-700">0% du total</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Legend Overlay -->
+                <div class="absolute bottom-8 left-8 z-[1000] bg-white/95 backdrop-blur-md border border-gray-200 rounded-xl p-4 shadow-xl min-w-[200px]">
+                    <div class="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-3 border-b pb-2">Intensité des incidents</div>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-3">
+                            <span class="w-4 h-3 rounded-sm" style="background-color: #67000d"></span>
+                            <span class="text-xs font-medium text-gray-700">> 100 incidents</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="w-4 h-3 rounded-sm" style="background-color: #cb181d"></span>
+                            <span class="text-xs font-medium text-gray-700">51 - 100</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="w-4 h-3 rounded-sm" style="background-color: #fb6a4a"></span>
+                            <span class="text-xs font-medium text-gray-700">21 - 50</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="w-4 h-3 rounded-sm" style="background-color: #fcae91"></span>
+                            <span class="text-xs font-medium text-gray-700">1 - 20</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="w-4 h-3 rounded-sm bg-gray-100 border border-gray-200"></span>
+                            <span class="text-xs font-medium text-gray-500">Aucun incident</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </x-ui-card>
     </div>
@@ -192,6 +244,7 @@
                 },
                 map: null,
                 geoJsonLayer: null,
+                bubblesLayer: null,
                 geoJsonData: null,
 
                 init() {
@@ -525,22 +578,21 @@
                 },
 
                 initMap() {
-                    const mapContainer = document.getElementById('mapTerritoires');
+                    const mapContainer = document.getElementById('mapChefferies');
                     if (!mapContainer) return;
                     
                     // Centre RDC
-                    this.map = L.map('mapTerritoires').setView([-4.0383, 21.7587], 5);
+                    this.map = L.map('mapChefferies').setView([-4.0383, 21.7587], 5);
 
-                    // Fond de carte clair avec transparence
+                    // Fond de carte sombre/neutre pour faire ressortir les couleurs (style ehtools)
                     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
                         subdomains: 'abcd',
-                        maxZoom: 20,
-                        opacity: 0.6
+                        maxZoom: 20
                     }).addTo(this.map);
 
                     // Chargement du GeoJSON
-                    fetch('/cod_admin2_em.geojson')
+                    fetch('/cod_admin3_em.geojson')
                         .then(res => res.json())
                         .then(data => {
                             this.geoJsonData = data;
@@ -549,29 +601,30 @@
                 },
 
                 getColor(d) {
-                    // Dégradé de rouges
                     return d > 100 ? '#67000d' :
-                           d > 50  ? '#a50f15' :
-                           d > 20  ? '#cb181d' :
-                           d > 10  ? '#ef3b2c' :
-                           d > 5   ? '#fb6a4a' :
-                           d > 0   ? '#fc9272' :
-                                     'rgba(240,240,240,0.5)'; // transparent/gris clair
+                           d > 50  ? '#cb181d' :
+                           d > 20  ? '#fb6a4a' :
+                           d > 0   ? '#fcae91' :
+                                     '#f9fafb';
                 },
 
                 renderGeoJson() {
                     if (!this.map || !this.geoJsonData) return;
-                    if (this.geoJsonLayer) {
-                        this.map.removeLayer(this.geoJsonLayer);
-                    }
+                    if (this.geoJsonLayer) this.map.removeLayer(this.geoJsonLayer);
 
-                    const territoryData = this.payload.byTerritoire || {};
+                    const chefferieData = this.payload.byChefferie || {};
+                    const totalIncidents = Object.values(chefferieData).reduce((a, b) => a + b, 0);
 
-                    // Filtrer par province si non superadmin
+                    // Filtrer par province/territoire
                     let filteredFeatures = this.geoJsonData.features;
-                    if (!this.payload.scope.isSuper && this.payload.scope.code_province) {
+                    if (this.payload.scope.code_province) {
                         filteredFeatures = filteredFeatures.filter(f => 
                             f.properties.adm1_pcode === this.payload.scope.code_province
+                        );
+                    }
+                    if (this.payload.scope.code_territoire) {
+                        filteredFeatures = filteredFeatures.filter(f => 
+                            f.properties.adm2_pcode === this.payload.scope.code_territoire
                         );
                     }
 
@@ -582,58 +635,69 @@
 
                     this.geoJsonLayer = L.geoJSON(geoDataToRender, {
                         style: (feature) => {
-                            let name = feature.properties.adm2_name ? feature.properties.adm2_name.toLowerCase().trim() : '';
-                            let count = territoryData[name] || 0;
+                            const name = feature.properties.adm3_name ? feature.properties.adm3_name.toLowerCase().trim() : '';
+                            const count = chefferieData[name] || 0;
                             return {
                                 fillColor: this.getColor(count),
-                                weight: 2, // Contour renforcé
+                                weight: 1.2,
                                 opacity: 1,
-                                color: '#333', // Bordures foncées pour bien faire ressortir les territoires
-                                dashArray: '',
-                                fillOpacity: count > 0 ? 0.9 : 0.3
+                                color: '#60A5FA', // Bleu léger modèle ONU pour les contours
+                                fillOpacity: 0.85
                             };
                         },
                         onEachFeature: (feature, layer) => {
-                            let name = feature.properties.adm2_name || 'Inconnu';
-                            let count = territoryData[name.toLowerCase().trim()] || 0;
-                            
-                            let tooltipContent = `<div class="text-sm" style="font-family: inherit;"><div class="font-bold text-gray-800">${name}</div><div class="text-gray-600">Incidents: <span class="font-semibold text-gray-900">${count}</span></div></div>`;
-                            layer.bindTooltip(tooltipContent, {
-                                sticky: true,
-                                direction: 'top',
-                                className: 'bg-white border shadow p-2'
-                            });
+                            const name = feature.properties.adm3_name || 'Inconnu';
+                            const count = chefferieData[name.toLowerCase().trim()] || 0;
 
                             layer.on({
                                 mouseover: (e) => {
-                                    let l = e.target;
+                                    const l = e.target;
                                     l.setStyle({
-                                        weight: 3,
-                                        color: '#000',
-                                        dashArray: '',
+                                        weight: 2,
+                                        color: '#0B4F8A',
                                         fillOpacity: 1
                                     });
-                                    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-                                        l.bringToFront();
-                                    }
+                                    l.bringToFront();
                                 },
                                 mouseout: (e) => {
                                     this.geoJsonLayer.resetStyle(e.target);
+                                },
+                                click: () => {
+                                    this.showChefferiePanel(name, count, totalIncidents);
                                 }
                             });
+
+                            const tooltipContent = `<div class="p-1 font-bold text-gray-800">${name} : ${count} incidents</div>`;
+                            layer.bindTooltip(tooltipContent, { sticky: true, className: 'shadow-lg border-0 rounded-lg' });
                         }
                     }).addTo(this.map);
 
-                    // Ajuster la vue si on n'est pas superadmin et qu'il y a des données
                     if (!this.payload.scope.isSuper && filteredFeatures.length > 0) {
-                        this.map.fitBounds(this.geoJsonLayer.getBounds());
+                        this.map.fitBounds(this.geoJsonLayer.getBounds(), { padding: [20, 20] });
                     } else if (this.payload.scope.isSuper) {
-                        // Remettre au centre par défaut
                         this.map.setView([-4.0383, 21.7587], 5);
                     }
-                }
+                },
 
-            }
+                showChefferiePanel(name, count, total) {
+                    const panel = document.getElementById('mapInfoPanel');
+                    const nameEl = document.getElementById('panelChefferieName');
+                    const countEl = document.getElementById('panelIncidentCount');
+                    const barEl = document.getElementById('panelPercentBar');
+                    const textEl = document.getElementById('panelPercentText');
+
+                    if (!panel) return;
+
+                    nameEl.innerText = name;
+                    countEl.innerText = count;
+                    
+                    const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+                    barEl.style.width = percent + '%';
+                    textEl.innerText = percent + '% du total affiché';
+
+                    panel.classList.remove('translate-x-80');
+                },
+            };
         }
     </script>
 </div>

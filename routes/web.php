@@ -16,6 +16,7 @@ use App\Http\Controllers\IncidentExportController;
 use App\Livewire\Pages\Supervision\SuperviseurPerformance;
 use App\Livewire\Pages\Superviseurs\Performance;
 use App\Livewire\Pages\Documents\Index as DocumentsIndex;
+use App\Http\Controllers\MovementPrintController;
 
 
 //Route::view('/', 'welcome');
@@ -52,6 +53,8 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/incidents', IncidentsIndex::class)->name('incidents.index');
     Route::get('/incidents/{incident}', IncidentsShow::class)->name('incidents.show');
     Route::get('/incidents/{incident}/mouvements', \App\Livewire\Pages\Mouvements\Index::class)->name('incidents.mouvements');
+    Route::get('/mouvements', \App\Livewire\Pages\Mouvements\StandaloneIndex::class)->name('mouvements.standalone');
+    Route::get('/mouvements/{mouvement}/print', [MovementPrintController::class, 'show'])->name('mouvements.print');
 
     Route::get('/incidents/{incident}/print', [IncidentPrintController::class, 'show'])
         ->name('incidents.print');
